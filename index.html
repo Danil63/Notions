@@ -220,15 +220,18 @@
     // Прогресс-бар = выполнение тем
     document.getElementById('day-topics-fill').style.width = dayPercent + '%';
 
-    // Часы до конца дня (до 23:59)
+    // Живой отсчёт до конца дня (до 23:59:59)
     const hours = now.getHours();
     const minutes = now.getMinutes();
-    const currentMinutes = hours * 60 + minutes;
-    const endOfDay = 23 * 60 + 59;
-    const minutesLeft = Math.max(0, endOfDay - currentMinutes);
-    const hoursLeft = Math.floor(minutesLeft / 60);
-    const minsLeft = minutesLeft % 60;
-    document.getElementById('day-hours-left').textContent = hoursLeft + 'ч ' + minsLeft + 'м';
+    const seconds = now.getSeconds();
+    const currentSeconds = hours * 3600 + minutes * 60 + seconds;
+    const endOfDay = 23 * 3600 + 59 * 60 + 59;
+    const secsLeft = Math.max(0, endOfDay - currentSeconds);
+    const hoursLeft = Math.floor(secsLeft / 3600);
+    const minsLeft = Math.floor((secsLeft % 3600) / 60);
+    const secLeft = secsLeft % 60;
+    document.getElementById('day-hours-left').textContent =
+      hoursLeft + 'ч ' + minsLeft + 'м ' + secLeft + 'с';
 
     // Цвет карточки "тем сегодня"
     const topicsCard = document.getElementById('day-topics-card');
@@ -272,7 +275,7 @@
   }
 
   updateProgress();
-  setInterval(updateProgress, 60000);
+  setInterval(updateProgress, 1000);
 </script>
 
 </body>
