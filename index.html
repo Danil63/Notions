@@ -102,10 +102,6 @@
     background: linear-gradient(90deg, #2eaadc, #6c5ce7);
   }
 
-  .projects-fill {
-    background: linear-gradient(90deg, #00b894, #fdcb6e);
-  }
-
   .progress-info {
     margin-top: 8px;
     font-size: 13px;
@@ -172,20 +168,6 @@
       </div>
     </div>
 
-    <!-- Проекты -->
-    <div class="progress-section">
-      <div class="progress-label">
-        <span class="title">Проекты</span>
-        <span class="percentage" id="day-projects-percent">0%</span>
-      </div>
-      <div class="progress-bar-track">
-        <div class="progress-bar-fill projects-fill" id="day-projects-fill"></div>
-      </div>
-      <div class="progress-info">
-        <span id="day-projects-done">0</span> из <span id="day-projects-total">0</span> проектов
-      </div>
-    </div>
-
     <div class="deadline-info">
       <div>Дедлайн: <span id="day-deadline"></span></div>
       <div>Осталось: <span id="day-days-left"></span> дн.</div>
@@ -209,20 +191,6 @@
       </div>
     </div>
 
-    <!-- Проекты -->
-    <div class="progress-section">
-      <div class="progress-label">
-        <span class="title">Проекты</span>
-        <span class="percentage" id="week-projects-percent">0%</span>
-      </div>
-      <div class="progress-bar-track">
-        <div class="progress-bar-fill projects-fill" id="week-projects-fill"></div>
-      </div>
-      <div class="progress-info">
-        <span id="week-projects-done">0</span> из <span id="week-projects-total">0</span> проектов
-      </div>
-    </div>
-
     <div class="deadline-info">
       <div>Дедлайн: <span id="week-deadline"></span></div>
       <div>Осталось: <span id="week-weeks-left"></span> нед.</div>
@@ -236,8 +204,6 @@
   const COURSE = {
     topicsTotal: 407,       // всего тем в курсе
     topicsDone: 150,        // пройдено тем
-    projectsTotal: 3,       // всего проектов
-    projectsDone: 1,        // сделано проектов
     deadline: '2026-07-11', // дедлайн
     dailyTopicsDone: 0,     // тем пройдено сегодня
     weeklyTopicsDone: 0,    // тем пройдено на этой неделе
@@ -276,14 +242,6 @@
     document.getElementById('day-topics-done').textContent = dayDone;
     document.getElementById('day-topics-goal').textContent = dayGoal;
 
-    const projPercent = COURSE.projectsTotal > 0
-      ? Math.round((COURSE.projectsDone / COURSE.projectsTotal) * 100) : 0;
-
-    document.getElementById('day-projects-percent').textContent = projPercent + '%';
-    document.getElementById('day-projects-fill').style.width = projPercent + '%';
-    document.getElementById('day-projects-done').textContent = COURSE.projectsDone;
-    document.getElementById('day-projects-total').textContent = COURSE.projectsTotal;
-
     document.getElementById('day-deadline').textContent = formatDate(deadline);
     document.getElementById('day-days-left').textContent = daysLeft;
     document.getElementById('day-rate').textContent = dailyRate;
@@ -297,11 +255,6 @@
     document.getElementById('week-topics-fill').style.width = weekPercent + '%';
     document.getElementById('week-topics-done').textContent = weekDone;
     document.getElementById('week-topics-goal').textContent = weekGoal;
-
-    document.getElementById('week-projects-percent').textContent = projPercent + '%';
-    document.getElementById('week-projects-fill').style.width = projPercent + '%';
-    document.getElementById('week-projects-done').textContent = COURSE.projectsDone;
-    document.getElementById('week-projects-total').textContent = COURSE.projectsTotal;
 
     document.getElementById('week-deadline').textContent = formatDate(deadline);
     document.getElementById('week-weeks-left').textContent = weeksLeft;
