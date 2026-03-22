@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Progress Widget</title>
+<style>
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: transparent;
+    padding: 0;
+  }
+
+  .widget {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  /* Табы */
+  .tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 16px;
+  }
+
+  .tab {
+    padding: 8px 24px;
+    border: none;
+    background: #f1f1f0;
+    color: #787774;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+  }
+
+  .tab:hover {
+    background: #e8e8e6;
+    color: #37352f;
+  }
+
+  .tab.active {
+    background: #37352f;
+    color: #ffffff;
+  }
+
+  /* Контент табов */
+  .tab-content {
+    display: none;
+  }
+
+  .tab-content.active {
+    display: block;
+  }
+
+  /* Прогресс-бар */
+  .progress-section {
+    width: 100%;
+  }
+
+  .progress-label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    font-size: 14px;
+    color: #37352f;
+  }
+
+  .progress-label .title {
+    font-weight: 600;
+  }
+
+  .progress-label .percentage {
+    font-weight: 700;
+    font-size: 16px;
+  }
+
+  .progress-bar-track {
+    width: 100%;
+    height: 28px;
+    background: #f1f1f0;
+    border-radius: 14px;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .progress-bar-fill {
+    height: 100%;
+    border-radius: 14px;
+    transition: width 1s ease-in-out;
+    position: relative;
+    min-width: 0;
+  }
+
+  /* Цвет для дня */
+  .day-fill {
+    background: linear-gradient(90deg, #2eaadc, #6c5ce7);
+  }
+
+  /* Цвет для недели */
+  .week-fill {
+    background: linear-gradient(90deg, #00b894, #fdcb6e);
+  }
+
+  .progress-time {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 6px;
+    font-size: 12px;
+    color: #9b9a97;
+  }
+
+  .progress-info {
+    margin-top: 12px;
+    text-align: center;
+    font-size: 13px;
+    color: #787774;
+  }
+
+  .progress-info span {
+    font-weight: 600;
+    color: #37352f;
+  }
+</style>
+</head>
+<body>
+
+<div class="widget">
+  <!-- Табы -->
+  <div class="tabs">
+    <button class="tab active" data-tab="day">День</button>
+    <button class="tab" data-tab="week">Неделя</button>
+  </div>
+
+  <!-- Таб: День -->
+  <div class="tab-content active" id="tab-day">
+    <div class="progress-section">
+      <div class="progress-label">
+        <span class="title">Прогресс дня</span>
+        <span class="percentage" id="day-percent">0%</span>
+      </div>
+      <div class="progress-bar-track">
+        <div class="progress-bar-fill day-fill" id="day-fill"></div>
+      </div>
+      <div class="progress-time">
+        <span>00:00</span>
+        <span id="day-current-time"></span>
+        <span>23:59</span>
+      </div>
+      <div class="progress-info">
+        Прошло <span id="day-hours-passed">0</span> ч из 24 ч
+      </div>
+    </div>
+  </div>
+
+  <!-- Таб: Неделя -->
+  <div class="tab-content" id="tab-week">
+    <div class="progress-section">
+      <div class="progress-label">
+        <span class="title">Прогресс недели</span>
+        <span class="percentage" id="week-percent">0%</span>
+      </div>
+      <div class="progress-bar-track">
+        <div class="progress-bar-fill week-fill" id="week-fill"></div>
+      </div>
+      <div class="progress-time">
+        <span>Пн</span>
+        <span id="week-current-day"></span>
+        <span>Вс</span>
+      </div>
+      <div class="progress-info">
+        Прошло <span id="week-days-passed">0</span> дн. из 7 дн.
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Переключение табов
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      tab.classList.add('active');
+      document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+    });
+  });
+
+  function updateProgress() {
+    const now = new Date();
+
+    // --- Прогресс дня ---
+    const hours = now.getHours();
+    const minutes = now.getMinutes();
+    const totalMinutesDay = hours * 60 + minutes;
+    const dayPercent = Math.round((totalMinutesDay / 1440) * 100);
+
+    document.getElementById('day-percent').textContent = dayPercent + '%';
+    document.getElementById('day-fill').style.width = dayPercent + '%';
+    document.getElementById('day-current-time').textContent =
+      String(hours).padStart(2, '0') + ':' + String(minutes).padStart(2, '0');
+    document.getElementById('day-hours-passed').textContent =
+      hours + ' ч ' + minutes + ' мин';
+
+    // --- Прогресс недели ---
+    const dayNames = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
+    let jsDay = now.getDay(); // 0=Вс, 1=Пн...
+    // Перевод в ISO: Пн=0 ... Вс=6
+    let isoDay = (jsDay === 0) ? 6 : jsDay - 1;
+
+    const weekMinutesPassed = isoDay * 1440 + totalMinutesDay;
+    const totalWeekMinutes = 7 * 1440;
+    const weekPercent = Math.round((weekMinutesPassed / totalWeekMinutes) * 100);
+
+    document.getElementById('week-percent').textContent = weekPercent + '%';
+    document.getElementById('week-fill').style.width = weekPercent + '%';
+    document.getElementById('week-current-day').textContent = dayNames[jsDay];
+    document.getElementById('week-days-passed').textContent =
+      isoDay + ' дн. ' + hours + ' ч';
+  }
+
+  updateProgress();
+  setInterval(updateProgress, 60000);
+</script>
+
+</body>
+</html>
