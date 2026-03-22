@@ -21,19 +21,33 @@
     width: 100%;
   }
 
-  /* Табы */
+  /* Заголовок + табы — по центру */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+
+  .course-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: #37352f;
+  }
+
   .tabs {
     display: flex;
     gap: 4px;
-    margin-bottom: 16px;
   }
 
   .tab {
-    padding: 8px 24px;
+    padding: 6px 20px;
     border: none;
     background: #f1f1f0;
     color: #787774;
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 500;
     cursor: pointer;
     border-radius: 6px;
@@ -59,36 +73,14 @@
     display: block;
   }
 
-  /* Прогресс-бар */
-  .progress-section {
-    width: 100%;
-    margin-bottom: 20px;
-  }
-
-  .progress-label {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 8px;
-    font-size: 14px;
-    color: #37352f;
-  }
-
-  .progress-label .title {
-    font-weight: 600;
-  }
-
-  .progress-label .percentage {
-    font-weight: 700;
-    font-size: 16px;
-  }
-
+  /* Прогресс-бар — на всю ширину */
   .progress-bar-track {
     width: 100%;
     height: 28px;
     background: #f1f1f0;
     border-radius: 14px;
     overflow: hidden;
+    margin-bottom: 14px;
   }
 
   .progress-bar-fill {
@@ -96,105 +88,103 @@
     border-radius: 14px;
     transition: width 1s ease-in-out;
     min-width: 0;
-  }
-
-  .topics-fill {
     background: linear-gradient(90deg, #2eaadc, #6c5ce7);
   }
 
-  .progress-info {
-    margin-top: 8px;
-    font-size: 13px;
-    color: #787774;
+  /* Инфо-карточки — по центру */
+  .info-cards {
     display: flex;
-    justify-content: space-between;
-  }
-
-  .progress-info span {
-    font-weight: 600;
-    color: #37352f;
-  }
-
-  .course-title {
-    font-size: 15px;
-    font-weight: 600;
-    color: #37352f;
-    margin-bottom: 16px;
-  }
-
-  .deadline-info {
-    margin-top: 16px;
-    padding: 10px 14px;
-    background: #f7f6f3;
-    border-radius: 8px;
-    font-size: 13px;
-    color: #787774;
-    display: flex;
-    justify-content: space-between;
+    justify-content: center;
+    gap: 10px;
     flex-wrap: wrap;
-    gap: 8px;
+    max-width: 520px;
+    margin: 0 auto;
   }
 
-  .deadline-info span {
-    font-weight: 600;
+  .info-card {
+    background: #f7f6f3;
+    border-radius: 10px;
+    padding: 10px 16px;
+    text-align: center;
+    min-width: 100px;
+    flex: 1;
+  }
+
+  .info-card .value {
+    font-size: 20px;
+    font-weight: 700;
     color: #37352f;
+    line-height: 1.2;
+  }
+
+  .info-card .label {
+    font-size: 11px;
+    color: #9b9a97;
+    margin-top: 2px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
   }
 </style>
 </head>
 <body>
 
 <div class="widget">
-  <div class="course-title">Автоматизатор тестирования на Python</div>
-
-  <!-- Табы -->
-  <div class="tabs">
-    <button class="tab active" data-tab="day">День</button>
-    <button class="tab" data-tab="week">Неделя</button>
+  <!-- Заголовок + табы -->
+  <div class="header">
+    <span class="course-title">Автоматизатор тестирования на Python</span>
+    <div class="tabs">
+      <button class="tab active" data-tab="day">День</button>
+      <button class="tab" data-tab="week">Неделя</button>
+    </div>
   </div>
 
   <!-- Таб: День -->
   <div class="tab-content active" id="tab-day">
-    <!-- Темы -->
-    <div class="progress-section">
-      <div class="progress-label">
-        <span class="title">Темы на сегодня</span>
-        <span class="percentage" id="day-topics-percent">0%</span>
-      </div>
-      <div class="progress-bar-track">
-        <div class="progress-bar-fill topics-fill" id="day-topics-fill"></div>
-      </div>
-      <div class="progress-info">
-        <span id="day-topics-done">0</span> из <span id="day-topics-goal">0</span> тем
-      </div>
+    <div class="progress-bar-track">
+      <div class="progress-bar-fill" id="day-topics-fill"></div>
     </div>
-
-    <div class="deadline-info">
-      <div>Дедлайн: <span id="day-deadline"></span></div>
-      <div>Осталось: <span id="day-days-left"></span> дн.</div>
-      <div>Темп: <span id="day-rate"></span> тем/день</div>
+    <div class="info-cards">
+      <div class="info-card">
+        <div class="value"><span id="day-topics-done">0</span> / <span id="day-topics-goal">0</span></div>
+        <div class="label">тем сегодня</div>
+      </div>
+      <div class="info-card">
+        <div class="value" id="day-topics-percent">0%</div>
+        <div class="label">выполнено</div>
+      </div>
+      <div class="info-card">
+        <div class="value" id="day-days-left">0</div>
+        <div class="label">дней до дедлайна</div>
+      </div>
+      <div class="info-card">
+        <div class="value" id="day-rate">0</div>
+        <div class="label">тем / день</div>
+      </div>
     </div>
   </div>
 
   <!-- Таб: Неделя -->
   <div class="tab-content" id="tab-week">
-    <!-- Темы -->
-    <div class="progress-section">
-      <div class="progress-label">
-        <span class="title">Темы на неделю</span>
-        <span class="percentage" id="week-topics-percent">0%</span>
-      </div>
-      <div class="progress-bar-track">
-        <div class="progress-bar-fill topics-fill" id="week-topics-fill"></div>
-      </div>
-      <div class="progress-info">
-        <span id="week-topics-done">0</span> из <span id="week-topics-goal">0</span> тем
-      </div>
+    <div class="progress-bar-track">
+      <div class="progress-bar-fill" id="week-topics-fill"></div>
     </div>
-
-    <div class="deadline-info">
-      <div>Дедлайн: <span id="week-deadline"></span></div>
-      <div>Осталось: <span id="week-weeks-left"></span> нед.</div>
-      <div>Темп: <span id="week-rate"></span> тем/нед.</div>
+    <div class="info-cards">
+      <div class="info-card">
+        <div class="value"><span id="week-topics-done">0</span> / <span id="week-topics-goal">0</span></div>
+        <div class="label">тем за неделю</div>
+      </div>
+      <div class="info-card">
+        <div class="value" id="week-topics-percent">0%</div>
+        <div class="label">выполнено</div>
+      </div>
+      <div class="info-card">
+        <div class="value" id="week-weeks-left">0</div>
+        <div class="label">недель осталось</div>
+      </div>
+      <div class="info-card">
+        <div class="value" id="week-rate">0</div>
+        <div class="label">тем / неделю</div>
+      </div>
     </div>
   </div>
 </div>
@@ -202,15 +192,14 @@
 <script>
   // ===== ДАННЫЕ HEXLET — обновляй эти значения =====
   const COURSE = {
-    topicsTotal: 407,       // всего тем в курсе
-    topicsDone: 150,        // пройдено тем
-    deadline: '2026-07-11', // дедлайн
-    dailyTopicsDone: 0,     // тем пройдено сегодня
-    weeklyTopicsDone: 0,    // тем пройдено на этой неделе
+    topicsTotal: 407,
+    topicsDone: 150,
+    deadline: '2026-07-11',
+    dailyTopicsDone: 0,
+    weeklyTopicsDone: 0,
   };
   // =================================================
 
-  // Переключение табов
   document.querySelectorAll('.tab').forEach(tab => {
     tab.addEventListener('click', () => {
       document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
@@ -228,11 +217,10 @@
     const weeksLeft = Math.max(1, Math.ceil(daysLeft / 7));
     const topicsLeft = COURSE.topicsTotal - COURSE.topicsDone;
 
-    // Необходимый темп
     const dailyRate = daysLeft > 0 ? Math.ceil(topicsLeft / daysLeft) : topicsLeft;
     const weeklyRate = Math.ceil(topicsLeft / weeksLeft);
 
-    // --- Таб "День" ---
+    // День
     const dayGoal = dailyRate;
     const dayDone = COURSE.dailyTopicsDone;
     const dayPercent = dayGoal > 0 ? Math.min(100, Math.round((dayDone / dayGoal) * 100)) : 0;
@@ -241,12 +229,10 @@
     document.getElementById('day-topics-fill').style.width = dayPercent + '%';
     document.getElementById('day-topics-done').textContent = dayDone;
     document.getElementById('day-topics-goal').textContent = dayGoal;
-
-    document.getElementById('day-deadline').textContent = formatDate(deadline);
     document.getElementById('day-days-left').textContent = daysLeft;
     document.getElementById('day-rate').textContent = dailyRate;
 
-    // --- Таб "Неделя" ---
+    // Неделя
     const weekGoal = weeklyRate;
     const weekDone = COURSE.weeklyTopicsDone;
     const weekPercent = weekGoal > 0 ? Math.min(100, Math.round((weekDone / weekGoal) * 100)) : 0;
@@ -255,16 +241,8 @@
     document.getElementById('week-topics-fill').style.width = weekPercent + '%';
     document.getElementById('week-topics-done').textContent = weekDone;
     document.getElementById('week-topics-goal').textContent = weekGoal;
-
-    document.getElementById('week-deadline').textContent = formatDate(deadline);
     document.getElementById('week-weeks-left').textContent = weeksLeft;
     document.getElementById('week-rate').textContent = weeklyRate;
-  }
-
-  function formatDate(date) {
-    const months = ['янв', 'фев', 'мар', 'апр', 'мая', 'июн',
-                    'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'];
-    return date.getDate() + ' ' + months[date.getMonth()] + ' ' + date.getFullYear();
   }
 
   updateProgress();
