@@ -108,6 +108,7 @@
     text-align: center;
     min-width: 100px;
     flex: 1;
+    transition: background 0.3s ease;
   }
 
   .info-card .value {
@@ -144,7 +145,7 @@
       <div class="progress-bar-fill" id="day-topics-fill"></div>
     </div>
     <div class="info-cards">
-      <div class="info-card">
+      <div class="info-card" id="day-topics-card">
         <div class="value"><span id="day-topics-done">0</span> / <span id="day-topics-goal">0</span></div>
         <div class="label">тем сегодня</div>
       </div>
@@ -231,6 +232,16 @@
     document.getElementById('day-topics-goal').textContent = dayGoal;
     document.getElementById('day-days-left').textContent = daysLeft;
     document.getElementById('day-rate').textContent = dailyRate;
+
+    // Цвет карточки "тем сегодня"
+    const card = document.getElementById('day-topics-card');
+    if (dayDone <= 1) {
+      card.style.background = 'rgba(235, 59, 59, 0.2)';
+    } else if (dayDone === 2) {
+      card.style.background = 'rgba(245, 197, 24, 0.2)';
+    } else {
+      card.style.background = 'rgba(109, 189, 153, 0.2)';
+    }
 
     // Неделя
     const weekGoal = weeklyRate;
