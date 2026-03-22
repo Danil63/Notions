@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Progress Widget</title>
+<title>Hexlet Progress</title>
 <style>
   * {
     margin: 0;
@@ -14,12 +14,11 @@
   body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     background: transparent;
-    padding: 0;
+    padding: 8px 0;
   }
 
   .widget {
     width: 100%;
-    max-width: 100%;
   }
 
   /* Табы */
@@ -63,6 +62,7 @@
   /* Прогресс-бар */
   .progress-section {
     width: 100%;
+    margin-bottom: 20px;
   }
 
   .progress-label {
@@ -89,43 +89,57 @@
     background: #f1f1f0;
     border-radius: 14px;
     overflow: hidden;
-    position: relative;
   }
 
   .progress-bar-fill {
     height: 100%;
     border-radius: 14px;
     transition: width 1s ease-in-out;
-    position: relative;
     min-width: 0;
   }
 
-  /* Цвет для дня */
-  .day-fill {
+  .topics-fill {
     background: linear-gradient(90deg, #2eaadc, #6c5ce7);
   }
 
-  /* Цвет для недели */
-  .week-fill {
+  .projects-fill {
     background: linear-gradient(90deg, #00b894, #fdcb6e);
   }
 
-  .progress-time {
-    display: flex;
-    justify-content: space-between;
-    margin-top: 6px;
-    font-size: 12px;
-    color: #9b9a97;
-  }
-
   .progress-info {
-    margin-top: 12px;
-    text-align: center;
+    margin-top: 8px;
     font-size: 13px;
     color: #787774;
+    display: flex;
+    justify-content: space-between;
   }
 
   .progress-info span {
+    font-weight: 600;
+    color: #37352f;
+  }
+
+  .course-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: #37352f;
+    margin-bottom: 16px;
+  }
+
+  .deadline-info {
+    margin-top: 16px;
+    padding: 10px 14px;
+    background: #f7f6f3;
+    border-radius: 8px;
+    font-size: 13px;
+    color: #787774;
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .deadline-info span {
     font-weight: 600;
     color: #37352f;
   }
@@ -134,6 +148,8 @@
 <body>
 
 <div class="widget">
+  <div class="course-title">Автоматизатор тестирования на Python</div>
+
   <!-- Табы -->
   <div class="tabs">
     <button class="tab active" data-tab="day">День</button>
@@ -142,48 +158,92 @@
 
   <!-- Таб: День -->
   <div class="tab-content active" id="tab-day">
+    <!-- Темы -->
     <div class="progress-section">
       <div class="progress-label">
-        <span class="title">Прогресс дня</span>
-        <span class="percentage" id="day-percent">0%</span>
+        <span class="title">Темы на сегодня</span>
+        <span class="percentage" id="day-topics-percent">0%</span>
       </div>
       <div class="progress-bar-track">
-        <div class="progress-bar-fill day-fill" id="day-fill"></div>
-      </div>
-      <div class="progress-time">
-        <span>00:00</span>
-        <span id="day-current-time"></span>
-        <span>23:59</span>
+        <div class="progress-bar-fill topics-fill" id="day-topics-fill"></div>
       </div>
       <div class="progress-info">
-        Прошло <span id="day-hours-passed">0</span> ч из 24 ч
+        <span id="day-topics-done">0</span> из <span id="day-topics-goal">0</span> тем
       </div>
+    </div>
+
+    <!-- Проекты -->
+    <div class="progress-section">
+      <div class="progress-label">
+        <span class="title">Проекты</span>
+        <span class="percentage" id="day-projects-percent">0%</span>
+      </div>
+      <div class="progress-bar-track">
+        <div class="progress-bar-fill projects-fill" id="day-projects-fill"></div>
+      </div>
+      <div class="progress-info">
+        <span id="day-projects-done">0</span> из <span id="day-projects-total">0</span> проектов
+      </div>
+    </div>
+
+    <div class="deadline-info">
+      <div>Дедлайн: <span id="day-deadline"></span></div>
+      <div>Осталось: <span id="day-days-left"></span> дн.</div>
+      <div>Темп: <span id="day-rate"></span> тем/день</div>
     </div>
   </div>
 
   <!-- Таб: Неделя -->
   <div class="tab-content" id="tab-week">
+    <!-- Темы -->
     <div class="progress-section">
       <div class="progress-label">
-        <span class="title">Прогресс недели</span>
-        <span class="percentage" id="week-percent">0%</span>
+        <span class="title">Темы на неделю</span>
+        <span class="percentage" id="week-topics-percent">0%</span>
       </div>
       <div class="progress-bar-track">
-        <div class="progress-bar-fill week-fill" id="week-fill"></div>
-      </div>
-      <div class="progress-time">
-        <span>Пн</span>
-        <span id="week-current-day"></span>
-        <span>Вс</span>
+        <div class="progress-bar-fill topics-fill" id="week-topics-fill"></div>
       </div>
       <div class="progress-info">
-        Прошло <span id="week-days-passed">0</span> дн. из 7 дн.
+        <span id="week-topics-done">0</span> из <span id="week-topics-goal">0</span> тем
       </div>
+    </div>
+
+    <!-- Проекты -->
+    <div class="progress-section">
+      <div class="progress-label">
+        <span class="title">Проекты</span>
+        <span class="percentage" id="week-projects-percent">0%</span>
+      </div>
+      <div class="progress-bar-track">
+        <div class="progress-bar-fill projects-fill" id="week-projects-fill"></div>
+      </div>
+      <div class="progress-info">
+        <span id="week-projects-done">0</span> из <span id="week-projects-total">0</span> проектов
+      </div>
+    </div>
+
+    <div class="deadline-info">
+      <div>Дедлайн: <span id="week-deadline"></span></div>
+      <div>Осталось: <span id="week-weeks-left"></span> нед.</div>
+      <div>Темп: <span id="week-rate"></span> тем/нед.</div>
     </div>
   </div>
 </div>
 
 <script>
+  // ===== ДАННЫЕ HEXLET — обновляй эти значения =====
+  const COURSE = {
+    topicsTotal: 407,       // всего тем в курсе
+    topicsDone: 150,        // пройдено тем
+    projectsTotal: 3,       // всего проектов
+    projectsDone: 1,        // сделано проектов
+    deadline: '2026-07-11', // дедлайн
+    dailyTopicsDone: 0,     // тем пройдено сегодня
+    weeklyTopicsDone: 0,    // тем пройдено на этой неделе
+  };
+  // =================================================
+
   // Переключение табов
   document.querySelectorAll('.tab').forEach(tab => {
     tab.addEventListener('click', () => {
@@ -196,39 +256,65 @@
 
   function updateProgress() {
     const now = new Date();
+    const deadline = new Date(COURSE.deadline);
+    const msPerDay = 86400000;
+    const daysLeft = Math.max(0, Math.ceil((deadline - now) / msPerDay));
+    const weeksLeft = Math.max(1, Math.ceil(daysLeft / 7));
+    const topicsLeft = COURSE.topicsTotal - COURSE.topicsDone;
 
-    // --- Прогресс дня ---
-    const hours = now.getHours();
-    const minutes = now.getMinutes();
-    const totalMinutesDay = hours * 60 + minutes;
-    const dayPercent = Math.round((totalMinutesDay / 1440) * 100);
+    // Необходимый темп
+    const dailyRate = daysLeft > 0 ? Math.ceil(topicsLeft / daysLeft) : topicsLeft;
+    const weeklyRate = Math.ceil(topicsLeft / weeksLeft);
 
-    document.getElementById('day-percent').textContent = dayPercent + '%';
-    document.getElementById('day-fill').style.width = dayPercent + '%';
-    document.getElementById('day-current-time').textContent =
-      String(hours).padStart(2, '0') + ':' + String(minutes).padStart(2, '0');
-    document.getElementById('day-hours-passed').textContent =
-      hours + ' ч ' + minutes + ' мин';
+    // --- Таб "День" ---
+    const dayGoal = dailyRate;
+    const dayDone = COURSE.dailyTopicsDone;
+    const dayPercent = dayGoal > 0 ? Math.min(100, Math.round((dayDone / dayGoal) * 100)) : 0;
 
-    // --- Прогресс недели ---
-    const dayNames = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
-    let jsDay = now.getDay(); // 0=Вс, 1=Пн...
-    // Перевод в ISO: Пн=0 ... Вс=6
-    let isoDay = (jsDay === 0) ? 6 : jsDay - 1;
+    document.getElementById('day-topics-percent').textContent = dayPercent + '%';
+    document.getElementById('day-topics-fill').style.width = dayPercent + '%';
+    document.getElementById('day-topics-done').textContent = dayDone;
+    document.getElementById('day-topics-goal').textContent = dayGoal;
 
-    const weekMinutesPassed = isoDay * 1440 + totalMinutesDay;
-    const totalWeekMinutes = 7 * 1440;
-    const weekPercent = Math.round((weekMinutesPassed / totalWeekMinutes) * 100);
+    const projPercent = COURSE.projectsTotal > 0
+      ? Math.round((COURSE.projectsDone / COURSE.projectsTotal) * 100) : 0;
 
-    document.getElementById('week-percent').textContent = weekPercent + '%';
-    document.getElementById('week-fill').style.width = weekPercent + '%';
-    document.getElementById('week-current-day').textContent = dayNames[jsDay];
-    document.getElementById('week-days-passed').textContent =
-      isoDay + ' дн. ' + hours + ' ч';
+    document.getElementById('day-projects-percent').textContent = projPercent + '%';
+    document.getElementById('day-projects-fill').style.width = projPercent + '%';
+    document.getElementById('day-projects-done').textContent = COURSE.projectsDone;
+    document.getElementById('day-projects-total').textContent = COURSE.projectsTotal;
+
+    document.getElementById('day-deadline').textContent = formatDate(deadline);
+    document.getElementById('day-days-left').textContent = daysLeft;
+    document.getElementById('day-rate').textContent = dailyRate;
+
+    // --- Таб "Неделя" ---
+    const weekGoal = weeklyRate;
+    const weekDone = COURSE.weeklyTopicsDone;
+    const weekPercent = weekGoal > 0 ? Math.min(100, Math.round((weekDone / weekGoal) * 100)) : 0;
+
+    document.getElementById('week-topics-percent').textContent = weekPercent + '%';
+    document.getElementById('week-topics-fill').style.width = weekPercent + '%';
+    document.getElementById('week-topics-done').textContent = weekDone;
+    document.getElementById('week-topics-goal').textContent = weekGoal;
+
+    document.getElementById('week-projects-percent').textContent = projPercent + '%';
+    document.getElementById('week-projects-fill').style.width = projPercent + '%';
+    document.getElementById('week-projects-done').textContent = COURSE.projectsDone;
+    document.getElementById('week-projects-total').textContent = COURSE.projectsTotal;
+
+    document.getElementById('week-deadline').textContent = formatDate(deadline);
+    document.getElementById('week-weeks-left').textContent = weeksLeft;
+    document.getElementById('week-rate').textContent = weeklyRate;
+  }
+
+  function formatDate(date) {
+    const months = ['янв', 'фев', 'мар', 'апр', 'мая', 'июн',
+                    'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'];
+    return date.getDate() + ' ' + months[date.getMonth()] + ' ' + date.getFullYear();
   }
 
   updateProgress();
-  setInterval(updateProgress, 60000);
 </script>
 
 </body>
