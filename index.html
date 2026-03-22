@@ -217,25 +217,13 @@
     document.getElementById('day-topics-goal').textContent = dayGoal;
     document.getElementById('day-rate').textContent = dailyRate;
 
-    // Прогресс-бар = рабочее время 9:00–23:59
-    const hours = now.getHours();
-    const minutes = now.getMinutes();
-    const workStart = 9 * 60;       // 9:00 в минутах
-    const workEnd = 23 * 60 + 59;   // 23:59 в минутах
-    const workTotal = workEnd - workStart;
-    const currentMinutes = hours * 60 + minutes;
-
-    let timePercent = 0;
-    if (currentMinutes <= workStart) {
-      timePercent = 0;
-    } else if (currentMinutes >= workEnd) {
-      timePercent = 100;
-    } else {
-      timePercent = Math.round(((currentMinutes - workStart) / workTotal) * 100);
-    }
-    document.getElementById('day-topics-fill').style.width = timePercent + '%';
+    // Прогресс-бар = выполнение тем
+    document.getElementById('day-topics-fill').style.width = dayPercent + '%';
 
     // Часы до конца дня (до 23:59)
+    const hours = now.getHours();
+    const minutes = now.getMinutes();
+    const currentMinutes = hours * 60 + minutes;
     const endOfDay = 23 * 60 + 59;
     const minutesLeft = Math.max(0, endOfDay - currentMinutes);
     const hoursLeft = Math.floor(minutesLeft / 60);
