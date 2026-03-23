@@ -28,16 +28,19 @@ Notions/
 │   │   ├── App.tsx          — корневой компонент (табы, прогресс, задачи)
 │   │   ├── App.module.css
 │   │   ├── components/
+│   │   │   ├── DayCalendar/ — дневной календарь с часовыми слотами (drag & drop)
+│   │   │   │   ├── DayCalendar.tsx, DayCalendar.module.css, index.ts
 │   │   │   ├── InfoCard/    — карточка метрики (значение + подпись + цвет фона)
 │   │   │   │   ├── InfoCard.tsx, InfoCard.module.css, index.ts
 │   │   │   ├── ProgressBar/ — прогресс-бар (процент заполнения)
 │   │   │   │   ├── ProgressBar.tsx, ProgressBar.module.css, index.ts
 │   │   │   ├── Tabs/        — переключатель вкладок (День / Неделя)
 │   │   │   │   ├── Tabs.tsx, Tabs.module.css, index.ts
-│   │   │   └── TaskList/    — список задач (toggle, delete, add; макс. 5)
+│   │   │   └── TaskList/    — список задач (toggle, delete, add, drag; макс. 5)
 │   │   │       ├── TaskList.tsx, TaskItem.tsx, AddTask.tsx
 │   │   │       ├── TaskList.module.css, index.ts
 │   │   ├── hooks/
+│   │   │   ├── useCalendar.ts       — CRUD календарных записей + localStorage + автоочистка >7 дней
 │   │   │   ├── useTasks.ts          — CRUD задач + localStorage + авто-сброс по дате
 │   │   │   ├── useTimer.ts          — обратный отсчёт до конца дня (каждую секунду)
 │   │   │   └── useWeekProgress.ts   — расчёт прогресса по неделе
@@ -46,7 +49,7 @@ Notions/
 │   │   ├── utils/
 │   │   │   └── colors.ts            — логика выбора цвета карточек по состоянию
 │   │   ├── types/
-│   │   │   └── task.ts              — интерфейс Task { id, text, done }
+│   │   │   └── task.ts              — интерфейсы Task + CalendarEntry
 │   │   └── styles/
 │   │       └── variables.css        — CSS-переменные (дизайн-токены)
 │   ├── index.html           — HTML-шаблон Vite
@@ -75,15 +78,17 @@ Notions/
 
 | Компонент      | Файлы                                    | Назначение                                    |
 |----------------|------------------------------------------|-----------------------------------------------|
+| `DayCalendar`  | DayCalendar.tsx + .module.css + index.ts  | Дневной календарь: 24 часовых слота, drag & drop из TaskList, localStorage (7 дней) |
 | `ProgressBar`  | ProgressBar.tsx + .module.css + index.ts  | Полоса прогресса, принимает `percent: number`  |
 | `Tabs`         | Tabs.tsx + .module.css + index.ts         | Переключатель вкладок, принимает labels/index  |
 | `InfoCard`     | InfoCard.tsx + .module.css + index.ts     | Карточка метрики с динамическим цветом фона    |
-| `TaskList`     | TaskList.tsx, TaskItem.tsx, AddTask.tsx    | Список задач: toggle, delete, add (макс. 5)   |
+| `TaskList`     | TaskList.tsx, TaskItem.tsx, AddTask.tsx    | Список задач: toggle, delete, drag, add (макс. 5) |
 
 ### Хуки (frontend/src/hooks/)
 
 | Хук                | Назначение                                                                |
 |--------------------|---------------------------------------------------------------------------|
+| `useCalendar`      | CRUD календарных записей в localStorage. Хранение 7 дней, автоочистка старых записей. |
 | `useTasks`         | CRUD задач через localStorage. Авто-сброс при смене дня. Лимит: 5 задач. |
 | `useTimer`         | Строка "Xч Yм Zс" до конца дня. Обновляется каждую секунду.             |
 | `useWeekProgress`  | Расчёт прогресса по неделе из `config/weekConfig.ts`.                    |
@@ -97,6 +102,8 @@ Notions/
 - **useMemo** — мемоизация вычисляемых значений (`doneCount`)
 - **a11y** — чекбоксы доступны с клавиатуры (`role`, `aria-checked`, `tabIndex`, `onKeyDown`)
 - **Конфигурация** вынесена в `config/weekConfig.ts` — в будущем заменится на fetch с бекенда
+- **HTML5 Drag & Drop** — нативный API для перетаскивания задач из TaskList в DayCalendar (без внешних библиотек)
+- **Двухколоночный лейаут** — вкладка "День": левая колонка (40%) — задачи, правая (60%) — календарь
 
 ## Widget (standalone): архитектура
 

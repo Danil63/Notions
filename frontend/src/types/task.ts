@@ -3,3 +3,10 @@ export interface Task {
   text: string;
   done: boolean;
 }
+
+export interface CalendarEntry {
+  taskId: string;
+  taskText: string;
+  hour: number;
+  date: string;
+}

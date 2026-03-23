@@ -17,6 +17,7 @@ export function TaskList({ tasks, canAdd, onToggle, onDelete, onAdd }: Props) {
       {tasks.map((task) => (
         <TaskItem
           key={task.id}
+          id={task.id}
           text={task.text}
           done={task.done}
           onToggle={() => onToggle(task.id)}

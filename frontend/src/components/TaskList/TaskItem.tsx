@@ -1,15 +1,27 @@
+import type { DragEvent } from "react";
 import styles from "./TaskList.module.css";
 
 interface Props {
+  id: string;
   text: string;
   done: boolean;
   onToggle: () => void;
   onDelete: () => void;
 }
 
-export function TaskItem({ text, done, onToggle, onDelete }: Props) {
+export function TaskItem({ id, text, done, onToggle, onDelete }: Props) {
+  function handleDragStart(e: DragEvent) {
+    e.dataTransfer.setData("taskId", id);
+    e.dataTransfer.setData("taskText", text);
+    e.dataTransfer.effectAllowed = "move";
+  }
+
   return (
-    <div className={`${styles.item} ${done ? styles.done : ""}`}>
+    <div
+      className={`${styles.item} ${done ? styles.done : ""}`}
+      draggable
+      onDragStart={handleDragStart}
+    >
       <div
         className={`${styles.checkbox} ${done ? styles.checked : ""}`}
         role="checkbox"

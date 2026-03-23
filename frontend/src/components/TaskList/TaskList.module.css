@@ -1,5 +1,4 @@
 .container {
-  max-width: 40%;
   margin: 14px 0 0;
 }
 
@@ -12,6 +11,11 @@
   padding: 10px 14px;
   margin-bottom: 6px;
   transition: background 0.2s ease, opacity 0.2s ease;
+  cursor: grab;
+}
+
+.item:active {
+  cursor: grabbing;
 }
 
 .item:hover {

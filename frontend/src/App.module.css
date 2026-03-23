@@ -1,7 +1,7 @@
 .widget {
   width: 100%;
   padding: 8px 0;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", sans-serif;
 }
 
 .infoCards {
@@ -11,4 +11,21 @@
   flex-wrap: wrap;
   max-width: 520px;
   margin: 0 auto;
+}
+
+.dayColumns {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+  margin-top: 16px;
+}
+
+.leftColumn {
+  width: 35%;
+  flex-shrink: 0;
+}
+
+.rightColumn {
+  flex: 1;
+  min-width: 0;
 }
