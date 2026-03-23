@@ -1,0 +1,30 @@
+:root {
+  /* Primary */
+  --color-primary: #007fff;
+  --color-primary-bg: rgba(0, 127, 255, 0.04);
+
+  /* Text */
+  --color-text: #37352f;
+  --color-text-secondary: #787774;
+  --color-text-muted: #9b9a97;
+  --color-placeholder: #b8b8b5;
+  --color-white: #ffffff;
+
+  /* Backgrounds */
+  --color-bg: #f7f6f3;
+  --color-bg-hover: #eeedeb;
+  --color-bg-track: #f1f1f0;
+  --color-bg-track-hover: #e8e8e6;
+
+  /* Borders */
+  --color-border: #c4c4c2;
+  --color-border-light: #d8d8d6;
+
+  /* Status */
+  --color-danger: #eb3b3b;
+  --color-danger-bg: rgba(235, 59, 59, 0.2);
+  --color-danger-bg-hover: rgba(235, 59, 59, 0.15);
+  --color-warning-bg: rgba(245, 197, 24, 0.2);
+  --color-success-bg: rgba(46, 204, 113, 0.2);
+  --color-success-muted-bg: rgba(109, 189, 153, 0.2);
+}

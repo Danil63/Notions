@@ -1,0 +1,143 @@
+.container {
+  max-width: 40%;
+  margin: 14px 0 0;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--color-bg);
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin-bottom: 6px;
+  transition: background 0.2s ease, opacity 0.2s ease;
+}
+
+.item:hover {
+  background: var(--color-bg-hover);
+}
+
+.done {
+  opacity: 0.55;
+}
+
+.done .text {
+  text-decoration: line-through;
+  color: var(--color-text-muted);
+}
+
+.checkbox {
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--color-border);
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+  background: transparent;
+}
+
+.checkbox:hover {
+  border-color: var(--color-primary);
+}
+
+.checked {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.checked::after {
+  content: "";
+  width: 5px;
+  height: 9px;
+  border: solid var(--color-white);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+  margin-bottom: 2px;
+}
+
+.text {
+  font-size: 14px;
+  color: var(--color-text);
+  line-height: 1.4;
+  flex: 1;
+  word-break: break-word;
+}
+
+.deleteBtn {
+  width: 20px;
+  height: 20px;
+  border: none;
+  background: transparent;
+  color: var(--color-border);
+  font-size: 16px;
+  cursor: pointer;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  opacity: 0;
+  transition: all 0.15s ease;
+  line-height: 1;
+}
+
+.item:hover .deleteBtn {
+  opacity: 1;
+}
+
+.deleteBtn:hover {
+  background: var(--color-danger-bg-hover);
+  color: var(--color-danger);
+}
+
+.addBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  padding: 10px 14px;
+  border: 2px dashed var(--color-border-light);
+  background: transparent;
+  border-radius: 10px;
+  color: var(--color-text-muted);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-top: 2px;
+}
+
+.addBtn:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background: var(--color-primary-bg);
+}
+
+.plusIcon {
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.input {
+  width: 100%;
+  padding: 10px 14px;
+  border: 2px solid var(--color-primary);
+  border-radius: 10px;
+  font-size: 14px;
+  font-family: inherit;
+  color: var(--color-text);
+  outline: none;
+  background: var(--color-white);
+  margin-top: 2px;
+}
+
+.input::placeholder {
+  color: var(--color-placeholder);
+}

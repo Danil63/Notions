@@ -1,0 +1,291 @@
+:root {
+  --color-primary: #007fff;
+  --color-primary-bg: rgba(0, 127, 255, 0.04);
+  --color-text: #37352f;
+  --color-text-secondary: #787774;
+  --color-text-muted: #9b9a97;
+  --color-placeholder: #b8b8b5;
+  --color-white: #ffffff;
+  --color-bg: #f7f6f3;
+  --color-bg-hover: #eeedeb;
+  --color-bg-track: #f1f1f0;
+  --color-bg-track-hover: #e8e8e6;
+  --color-border: #c4c4c2;
+  --color-border-light: #d8d8d6;
+  --color-danger: #eb3b3b;
+  --color-danger-bg: rgba(235, 59, 59, 0.2);
+  --color-danger-bg-hover: rgba(235, 59, 59, 0.15);
+  --color-warning-bg: rgba(245, 197, 24, 0.2);
+  --color-success-bg: rgba(46, 204, 113, 0.2);
+  --color-success-muted-bg: rgba(109, 189, 153, 0.2);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: transparent;
+  padding: 8px 0;
+}
+
+.widget {
+  width: 100%;
+}
+
+/* Tabs */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.tabs {
+  display: flex;
+  gap: 4px;
+}
+
+.tab {
+  padding: 6px 20px;
+  border: none;
+  background: var(--color-bg-track);
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.tab:hover {
+  background: var(--color-bg-track-hover);
+  color: var(--color-text);
+}
+
+.tab.active {
+  background: var(--color-text);
+  color: var(--color-white);
+}
+
+/* Tab content */
+.tab-content {
+  display: none;
+}
+
+.tab-content.active {
+  display: block;
+}
+
+/* Progress bar */
+.progress-bar-track {
+  width: 100%;
+  height: 28px;
+  background: var(--color-bg-track);
+  border-radius: 14px;
+  overflow: hidden;
+  margin-bottom: 14px;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  border-radius: 14px;
+  transition: width 0.5s ease-in-out;
+  min-width: 0;
+  background: var(--color-primary);
+}
+
+/* Info cards */
+.info-cards {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  max-width: 520px;
+  margin: 0 auto;
+}
+
+.info-card {
+  background: var(--color-bg);
+  border-radius: 10px;
+  padding: 10px 16px;
+  text-align: center;
+  min-width: 100px;
+  flex: 1;
+  transition: background 0.3s ease;
+}
+
+.info-card .value {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--color-text);
+  line-height: 1.2;
+}
+
+.info-card .label {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  margin-top: 2px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Task list */
+.tasks-container {
+  max-width: 40%;
+  margin: 14px 0 0;
+}
+
+.task-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--color-bg);
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin-bottom: 6px;
+  transition: background 0.2s ease, opacity 0.2s ease;
+}
+
+.task-item:hover {
+  background: var(--color-bg-hover);
+}
+
+.task-item.done {
+  opacity: 0.55;
+}
+
+.task-item.done .task-text {
+  text-decoration: line-through;
+  color: var(--color-text-muted);
+}
+
+.task-checkbox {
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--color-border);
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+  background: transparent;
+}
+
+.task-checkbox:hover {
+  border-color: var(--color-primary);
+}
+
+.task-checkbox.checked {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.task-checkbox.checked::after {
+  content: '';
+  width: 5px;
+  height: 9px;
+  border: solid var(--color-white);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+  margin-bottom: 2px;
+}
+
+.task-text {
+  font-size: 14px;
+  color: var(--color-text);
+  line-height: 1.4;
+  flex: 1;
+  word-break: break-word;
+}
+
+.task-delete {
+  width: 20px;
+  height: 20px;
+  border: none;
+  background: transparent;
+  color: var(--color-border);
+  font-size: 16px;
+  cursor: pointer;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  opacity: 0;
+  transition: all 0.15s ease;
+  line-height: 1;
+}
+
+.task-item:hover .task-delete {
+  opacity: 1;
+}
+
+.task-delete:hover {
+  background: var(--color-danger-bg-hover);
+  color: var(--color-danger);
+}
+
+/* Add task button */
+.add-task-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  padding: 10px 14px;
+  border: 2px dashed var(--color-border-light);
+  background: transparent;
+  border-radius: 10px;
+  color: var(--color-text-muted);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-top: 2px;
+}
+
+.add-task-btn:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background: var(--color-primary-bg);
+}
+
+.add-task-btn .plus-icon {
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+/* Task input */
+.add-task-input-wrap {
+  display: none;
+  margin-top: 2px;
+}
+
+.add-task-input-wrap.visible {
+  display: block;
+}
+
+.add-task-input {
+  width: 100%;
+  padding: 10px 14px;
+  border: 2px solid var(--color-primary);
+  border-radius: 10px;
+  font-size: 14px;
+  font-family: inherit;
+  color: var(--color-text);
+  outline: none;
+  background: var(--color-white);
+}
+
+.add-task-input::placeholder {
+  color: var(--color-placeholder);
+}
