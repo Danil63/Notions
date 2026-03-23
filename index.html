@@ -456,6 +456,7 @@
         if (e.key === 'Enter') {
           const val = input.value.trim();
           if (val) {
+            input.value = '';
             tasks.push({ text: val, done: false });
             saveTasks(tasks);
             renderTasks();
