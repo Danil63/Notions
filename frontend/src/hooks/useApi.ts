@@ -24,9 +24,11 @@ export async function apiPatch<T>(path: string, data: T): Promise<boolean> {
   }
 }
 
-export function debounce<T extends (...args: unknown[]) => void>(fn: T, ms = DEBOUNCE_MS): T {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function debounce<T extends (...args: any[]) => void>(fn: T, ms = DEBOUNCE_MS): T {
   let timer: ReturnType<typeof setTimeout>;
-  return ((...args: unknown[]) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return ((...args: any[]) => {
     clearTimeout(timer);
     timer = setTimeout(() => fn(...args), ms);
   }) as unknown as T;
