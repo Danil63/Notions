@@ -5,8 +5,9 @@ import styles from "./DayCalendar.module.css";
 interface Props {
   getEntryAt: (hour: number) => CalendarEntry | null;
   isSlotOccupied: (hour: number) => boolean;
-  onDrop: (taskId: string, taskText: string, hour: number) => void;
+  onDrop: (taskId: string, taskText: string, hour: number, fromCalendar?: boolean, fromDate?: string, fromHour?: number) => void;
   onRemove: (taskId: string, date: string, hour: number) => void;
+  onToggle: (taskId: string, date: string, hour: number) => void;
 }
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
@@ -23,7 +24,7 @@ function formatToday(): string {
   });
 }
 
-export function DayCalendar({ getEntryAt, isSlotOccupied, onDrop, onRemove }: Props) {
+export function DayCalendar({ getEntryAt, isSlotOccupied, onDrop, onRemove, onToggle }: Props) {
   const [currentHour, setCurrentHour] = useState(new Date().getHours());
   const [dragOverHour, setDragOverHour] = useState<number | null>(null);
   const todayLabel = useMemo(formatToday, []);
@@ -50,9 +51,22 @@ export function DayCalendar({ getEntryAt, isSlotOccupied, onDrop, onRemove }: Pr
     if (isSlotOccupied(hour)) return;
     const taskId = e.dataTransfer.getData("taskId");
     const taskText = e.dataTransfer.getData("taskText");
+    const fromCalendar = e.dataTransfer.getData("fromCalendar") === "true";
+    const fromDate = e.dataTransfer.getData("calendarDate");
+    const fromHour = Number(e.dataTransfer.getData("calendarHour"));
     if (taskId && taskText) {
-      onDrop(taskId, taskText, hour);
+      onDrop(taskId, taskText, hour, fromCalendar, fromDate, fromHour);
     }
+  }
+
+  function handleEntryDragStart(e: DragEvent, entry: CalendarEntry) {
+    e.dataTransfer.setData("taskId", entry.taskId);
+    e.dataTransfer.setData("taskText", entry.taskText);
+    e.dataTransfer.setData("fromCalendar", "true");
+    e.dataTransfer.setData("calendarDate", entry.date);
+    e.dataTransfer.setData("calendarHour", String(entry.hour));
+    e.dataTransfer.setData("fromcalendar", "true");
+    e.dataTransfer.effectAllowed = "move";
   }
 
   return (
@@ -70,6 +84,7 @@ export function DayCalendar({ getEntryAt, isSlotOccupied, onDrop, onRemove }: Pr
           styles.slot,
           isCurrent ? styles.currentHour : "",
           entry ? styles.occupied : "",
+          entry?.done ? styles.entryDone : "",
           isDragOver ? styles.dragOver : "",
         ]
           .filter(Boolean)
@@ -84,9 +99,21 @@ export function DayCalendar({ getEntryAt, isSlotOccupied, onDrop, onRemove }: Pr
             onDrop={(e) => handleDrop(e, hour)}
           >
             <span className={styles.time}>{formatHour(hour)}</span>
-            <div className={styles.content}>
+            <div
+              className={styles.content}
+              draggable={!!entry}
+              onDragStart={entry ? (e) => handleEntryDragStart(e, entry) : undefined}
+            >
               {entry && (
                 <>
+                  <div
+                    className={`${styles.entryCheckbox} ${entry.done ? styles.entryChecked : ""}`}
+                    role="checkbox"
+                    aria-checked={entry.done}
+                    tabIndex={0}
+                    onClick={() => onToggle(entry.taskId, entry.date, entry.hour)}
+                    onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onToggle(entry.taskId, entry.date, entry.hour); } }}
+                  />
                   <span className={styles.taskText}>{entry.taskText}</span>
                   <button
                     className={styles.removeBtn}

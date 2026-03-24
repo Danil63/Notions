@@ -1,8 +1,13 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import type { CalendarEntry } from "../types/task";
+import { apiGet, apiPatch, debounce } from "./useApi";
 
 const STORAGE_KEY = "notion_calendar";
 const MAX_AGE_DAYS = 7;
+
+interface CalendarPayload {
+  entries: CalendarEntry[];
+}
 
 function getTodayKey(): string {
   const d = new Date();
@@ -27,19 +32,46 @@ function loadEntries(): CalendarEntry[] {
   }
 }
 
-function saveEntries(entries: CalendarEntry[]): void {
+function saveToLocalStorage(entries: CalendarEntry[]): void {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
 }
 
+const debouncedSync = debounce((entries: CalendarEntry[]) => {
+  apiPatch<CalendarPayload>("/calendar", { entries });
+});
+
 export function useCalendar() {
   const [entries, setEntries] = useState<CalendarEntry[]>(loadEntries);
+  const initialized = useRef(false);
+
+  useEffect(() => {
+    if (initialized.current) return;
+    initialized.current = true;
+
+    apiGet<CalendarPayload>("/calendar").then((data) => {
+      if (data && data.entries) {
+        setEntries(data.entries);
+        saveToLocalStorage(data.entries);
+      } else {
+        const local = loadEntries();
+        if (local.length > 0) {
+          debouncedSync(local);
+        }
+      }
+    });
+  }, []);
+
+  function saveEntries(entries: CalendarEntry[]): void {
+    saveToLocalStorage(entries);
+    debouncedSync(entries);
+  }
 
   const addEntry = useCallback((taskId: string, taskText: string, hour: number) => {
     setEntries((prev) => {
       const date = getTodayKey();
       const occupied = prev.some((e) => e.date === date && e.hour === hour);
       if (occupied) return prev;
-      const next = [...prev, { taskId, taskText, hour, date }];
+      const next = [...prev, { taskId, taskText, hour, date, done: false }];
       saveEntries(next);
       return next;
     });
@@ -49,6 +81,32 @@ export function useCalendar() {
     setEntries((prev) => {
       const next = prev.filter(
         (e) => !(e.taskId === taskId && e.date === date && e.hour === hour)
+      );
+      saveEntries(next);
+      return next;
+    });
+  }, []);
+
+  const moveEntry = useCallback((taskId: string, fromDate: string, fromHour: number, toHour: number) => {
+    setEntries((prev) => {
+      const date = getTodayKey();
+      if (prev.some((e) => e.date === date && e.hour === toHour)) return prev;
+      const next = prev.map((e) =>
+        e.taskId === taskId && e.date === fromDate && e.hour === fromHour
+          ? { ...e, hour: toHour }
+          : e
+      );
+      saveEntries(next);
+      return next;
+    });
+  }, []);
+
+  const toggleEntry = useCallback((taskId: string, date: string, hour: number) => {
+    setEntries((prev) => {
+      const next = prev.map((e) =>
+        e.taskId === taskId && e.date === date && e.hour === hour
+          ? { ...e, done: !e.done }
+          : e
       );
       saveEntries(next);
       return next;
@@ -67,5 +125,8 @@ export function useCalendar() {
     [todayEntries]
   );
 
-  return { entries, todayEntries, addEntry, removeEntry, isSlotOccupied, getEntryAt };
+  const todayTotal = todayEntries.length;
+  const todayDoneCount = useMemo(() => todayEntries.filter((e) => e.done).length, [todayEntries]);
+
+  return { entries, todayEntries, addEntry, removeEntry, moveEntry, toggleEntry, isSlotOccupied, getEntryAt, todayTotal, todayDoneCount };
 }

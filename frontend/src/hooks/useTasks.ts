@@ -1,8 +1,14 @@
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import type { Task } from "../types/task";
+import { apiGet, apiPatch, debounce } from "./useApi";
 
 const MAX_TASKS = 5;
 const STORAGE_KEY = "notion_day_tasks";
+
+interface TasksPayload {
+  date: string;
+  tasks: Task[];
+}
 
 function getTodayKey(): string {
   const d = new Date();
@@ -24,15 +30,45 @@ function loadTasks(): Task[] {
   }
 }
 
-function saveTasks(tasks: Task[]): void {
+function saveToLocalStorage(tasks: Task[]): void {
   localStorage.setItem(
     STORAGE_KEY,
     JSON.stringify({ date: getTodayKey(), tasks })
   );
 }
 
+const debouncedSync = debounce((tasks: Task[]) => {
+  apiPatch<TasksPayload>("/tasks", { date: getTodayKey(), tasks });
+});
+
 export function useTasks() {
   const [tasks, setTasks] = useState<Task[]>(loadTasks);
+  const initialized = useRef(false);
+
+  useEffect(() => {
+    if (initialized.current) return;
+    initialized.current = true;
+
+    apiGet<TasksPayload>("/tasks").then((data) => {
+      if (data && data.date === getTodayKey()) {
+        setTasks(data.tasks);
+        saveToLocalStorage(data.tasks);
+      } else if (data && data.date !== getTodayKey()) {
+        setTasks([]);
+        saveToLocalStorage([]);
+      } else {
+        const local = loadTasks();
+        if (local.length > 0) {
+          debouncedSync(local);
+        }
+      }
+    });
+  }, []);
+
+  function saveTasks(tasks: Task[]): void {
+    saveToLocalStorage(tasks);
+    debouncedSync(tasks);
+  }
 
   const addTask = useCallback((text: string) => {
     setTasks((prev) => {

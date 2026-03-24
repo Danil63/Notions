@@ -94,6 +94,11 @@
   border-radius: 8px;
   margin: 4px 8px 4px 0;
   border: 1px solid rgba(52, 199, 89, 0.15);
+  cursor: grab;
+}
+
+.occupied .content:active {
+  cursor: grabbing;
 }
 
 .occupied.currentHour {
@@ -152,6 +157,49 @@
 .occupied .taskText {
   font-weight: 500;
   color: #1a7a3a;
+}
+
+.entryCheckbox {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(52, 199, 89, 0.4);
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+  background: transparent;
+}
+
+.entryCheckbox:hover {
+  border-color: #34c759;
+}
+
+.entryChecked {
+  background: #34c759;
+  border-color: #34c759;
+}
+
+.entryChecked::after {
+  content: "";
+  width: 4px;
+  height: 8px;
+  border: solid #fff;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+  margin-bottom: 2px;
+}
+
+.entryDone .taskText {
+  text-decoration: line-through;
+  opacity: 0.55;
+}
+
+.entryDone .content {
+  background: linear-gradient(135deg, rgba(52, 199, 89, 0.05), rgba(48, 209, 88, 0.03));
+  border-color: rgba(52, 199, 89, 0.1);
 }
 
 .removeBtn {

@@ -18,18 +18,31 @@ export default function App() {
   const { tasks, addTask, toggleTask, deleteTask, canAdd, doneCount } = useTasks();
   const timeLeft = useTimer();
   const week = useWeekProgress();
-  const { addEntry, removeEntry, isSlotOccupied, getEntryAt } = useCalendar();
+  const { addEntry, removeEntry, moveEntry, toggleEntry, isSlotOccupied, getEntryAt, todayTotal: calTotal, todayDoneCount: calDone } = useCalendar();
 
-  const total = tasks.length;
-  const dayPercent = total > 0 ? Math.min(100, Math.round((doneCount / total) * 100)) : 0;
-  const allDone = total > 0 && doneCount >= total;
+  const total = tasks.length + calTotal;
+  const totalDone = doneCount + calDone;
+  const dayPercent = total > 0 ? Math.min(100, Math.round((totalDone / total) * 100)) : 0;
+  const allDone = total > 0 && totalDone >= total;
 
   const handleCalendarDrop = useCallback(
-    (taskId: string, taskText: string, hour: number) => {
-      addEntry(taskId, taskText, hour);
-      deleteTask(taskId);
+    (taskId: string, taskText: string, hour: number, fromCalendar?: boolean, fromDate?: string, fromHour?: number) => {
+      if (fromCalendar && fromDate !== undefined && fromHour !== undefined) {
+        moveEntry(taskId, fromDate, fromHour, hour);
+      } else {
+        addEntry(taskId, taskText, hour);
+        deleteTask(taskId);
+      }
     },
-    [addEntry, deleteTask]
+    [addEntry, deleteTask, moveEntry]
+  );
+
+  const handleReturnToList = useCallback(
+    (taskId: string, taskText: string, date: string, hour: number) => {
+      removeEntry(taskId, date, hour);
+      addTask(taskText);
+    },
+    [removeEntry, addTask]
   );
 
   return (
@@ -41,7 +54,7 @@ export default function App() {
           <ProgressBar percent={dayPercent} />
           <div className={styles.infoCards}>
             <InfoCard
-              value={`${doneCount} / ${total}`}
+              value={`${totalDone} / ${total}`}
               label="тем сегодня"
               bgColor={getTopicsCardColor(doneCount)}
             />
@@ -60,6 +73,7 @@ export default function App() {
                 onToggle={toggleTask}
                 onDelete={deleteTask}
                 onAdd={addTask}
+                onReturnFromCalendar={handleReturnToList}
               />
             </div>
             <div className={styles.rightColumn}>
@@ -68,6 +82,7 @@ export default function App() {
                 isSlotOccupied={isSlotOccupied}
                 onDrop={handleCalendarDrop}
                 onRemove={removeEntry}
+                onToggle={toggleEntry}
               />
             </div>
           </div>

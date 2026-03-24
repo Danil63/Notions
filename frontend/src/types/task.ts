@@ -9,4 +9,5 @@ export interface CalendarEntry {
   taskText: string;
   hour: number;
   date: string;
+  done: boolean;
 }
