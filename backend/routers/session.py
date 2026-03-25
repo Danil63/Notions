@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 
 from backend.models import SessionResponse
 from backend.services.day_reset import check_and_reset_tasks
@@ -9,10 +9,11 @@ router = APIRouter()
 
 
 @router.get("/session")
-def get_session() -> SessionResponse:
-    tasks = check_and_reset_tasks()
-    calendar = cleanup_calendar()
-    progress = load_progress()
+def get_session(request: Request) -> SessionResponse:
+    user_id = request.state.user_id
+    tasks = check_and_reset_tasks(user_id)
+    calendar = cleanup_calendar(user_id)
+    progress = load_progress(user_id)
 
     return SessionResponse(
         tasks=tasks,

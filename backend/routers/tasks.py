@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 
 from backend.models import TasksData
 from backend.services.day_reset import check_and_reset_tasks
@@ -8,11 +8,11 @@ router = APIRouter()
 
 
 @router.get("/tasks")
-def get_tasks() -> TasksData:
-    return check_and_reset_tasks()
+def get_tasks(request: Request) -> TasksData:
+    return check_and_reset_tasks(request.state.user_id)
 
 
 @router.patch("/tasks")
-def patch_tasks(data: TasksData) -> TasksData:
-    save_tasks(data.model_dump())
+def patch_tasks(data: TasksData, request: Request) -> TasksData:
+    save_tasks(request.state.user_id, data.model_dump())
     return data

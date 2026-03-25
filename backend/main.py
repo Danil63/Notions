@@ -5,6 +5,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 
+from backend.middleware import UserIdMiddleware
 from backend.routers import tasks, calendar, session
 from backend.services.storage import init_storage
 
@@ -19,9 +20,11 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Notions API", lifespan=lifespan)
 
+app.add_middleware(UserIdMiddleware)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=["http://localhost:5173", "https://notions-7u3j.onrender.com"],
+    allow_credentials=True,
     allow_methods=["GET", "PUT", "PATCH"],
     allow_headers=["Content-Type"],
 )

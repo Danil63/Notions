@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 
 from backend.models import CalendarData
 from backend.services.calendar_cleanup import cleanup_calendar
@@ -8,11 +8,11 @@ router = APIRouter()
 
 
 @router.get("/calendar")
-def get_calendar() -> CalendarData:
-    return cleanup_calendar()
+def get_calendar(request: Request) -> CalendarData:
+    return cleanup_calendar(request.state.user_id)
 
 
 @router.patch("/calendar")
-def patch_calendar(data: CalendarData) -> CalendarData:
-    save_calendar(data.model_dump())
+def patch_calendar(data: CalendarData, request: Request) -> CalendarData:
+    save_calendar(request.state.user_id, data.model_dump())
     return data

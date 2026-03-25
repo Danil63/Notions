@@ -25,9 +25,13 @@ def _get_lock(filename: str) -> threading.Lock:
         return _locks[filename]
 
 
-def _read_json(filename: str, default: Any = None) -> Any:
-    path = DATA_DIR / filename
-    lock = _get_lock(filename)
+def _user_dir(user_id: str) -> Path:
+    return DATA_DIR / user_id
+
+
+def _read_json(user_id: str, filename: str, default: Any = None) -> Any:
+    path = _user_dir(user_id) / filename
+    lock = _get_lock(f"{user_id}/{filename}")
     with lock:
         try:
             with open(path, "r", encoding="utf-8") as f:
@@ -36,12 +40,13 @@ def _read_json(filename: str, default: Any = None) -> Any:
             return default
 
 
-def _write_json(filename: str, data: Any) -> None:
-    path = DATA_DIR / filename
+def _write_json(user_id: str, filename: str, data: Any) -> None:
+    user_path = _user_dir(user_id)
+    path = user_path / filename
     tmp_path = path.with_suffix(".tmp")
-    lock = _get_lock(filename)
+    lock = _get_lock(f"{user_id}/{filename}")
     with lock:
-        DATA_DIR.mkdir(parents=True, exist_ok=True)
+        user_path.mkdir(parents=True, exist_ok=True)
         with open(tmp_path, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
         os.replace(tmp_path, path)
@@ -59,139 +64,158 @@ def init_storage() -> None:
     if DATABASE_URL:
         with _pg_conn() as conn:
             with conn.cursor() as cur:
-                cur.execute("""CREATE TABLE IF NOT EXISTS tasks (
-                    id TEXT PRIMARY KEY,
+                cur.execute("DROP TABLE IF EXISTS tasks")
+                cur.execute("DROP TABLE IF EXISTS calendar_entries")
+                cur.execute("DROP TABLE IF EXISTS progress_history")
+                cur.execute("""CREATE TABLE tasks (
+                    user_id TEXT NOT NULL,
+                    id TEXT NOT NULL,
                     text TEXT NOT NULL,
                     done BOOLEAN DEFAULT FALSE,
-                    date TEXT NOT NULL
+                    date TEXT NOT NULL,
+                    PRIMARY KEY (user_id, id, date)
                 )""")
-                cur.execute("""CREATE TABLE IF NOT EXISTS calendar_entries (
+                cur.execute("CREATE INDEX idx_tasks_user ON tasks (user_id)")
+                cur.execute("""CREATE TABLE calendar_entries (
+                    user_id TEXT NOT NULL,
                     task_id TEXT NOT NULL,
                     task_text TEXT NOT NULL,
                     hour INTEGER NOT NULL,
                     date TEXT NOT NULL,
                     done BOOLEAN DEFAULT FALSE,
-                    PRIMARY KEY (date, hour)
+                    PRIMARY KEY (user_id, date, hour)
                 )""")
-                cur.execute("""CREATE TABLE IF NOT EXISTS progress_history (
-                    date TEXT PRIMARY KEY,
+                cur.execute("CREATE INDEX idx_calendar_user ON calendar_entries (user_id)")
+                cur.execute("""CREATE TABLE progress_history (
+                    user_id TEXT NOT NULL,
+                    date TEXT NOT NULL,
                     tasks_total INTEGER DEFAULT 0,
                     tasks_done INTEGER DEFAULT 0,
                     calendar_total INTEGER DEFAULT 0,
-                    calendar_done INTEGER DEFAULT 0
+                    calendar_done INTEGER DEFAULT 0,
+                    PRIMARY KEY (user_id, date)
                 )""")
+                cur.execute("CREATE INDEX idx_progress_user ON progress_history (user_id)")
             conn.commit()
     else:
         DATA_DIR.mkdir(parents=True, exist_ok=True)
-        today = date.today().isoformat()
-        defaults = {
-            "tasks.json": {"date": today, "tasks": []},
-            "calendar.json": {"entries": []},
-            "progress_history.json": {"records": []},
-        }
-        for filename, default_data in defaults.items():
-            if not (DATA_DIR / filename).exists():
-                _write_json(filename, default_data)
 
 
-def load_tasks() -> dict:
+def load_tasks(user_id: str) -> dict:
     if DATABASE_URL:
         today = date.today().isoformat()
         with _pg_conn() as conn:
             with conn.cursor() as cur:
-                cur.execute("SELECT DISTINCT date FROM tasks ORDER BY date DESC LIMIT 1")
+                cur.execute(
+                    "SELECT DISTINCT date FROM tasks WHERE user_id = %s ORDER BY date DESC LIMIT 1",
+                    (user_id,),
+                )
                 row = cur.fetchone()
                 task_date = row["date"] if row else today
-                cur.execute("SELECT id, text, done FROM tasks WHERE date = %s", (task_date,))
+                cur.execute(
+                    "SELECT id, text, done FROM tasks WHERE user_id = %s AND date = %s",
+                    (user_id, task_date),
+                )
                 tasks = [dict(r) for r in cur.fetchall()]
         return {"date": task_date, "tasks": tasks}
     else:
         today = date.today().isoformat()
-        return _read_json("tasks.json", {"date": today, "tasks": []})
+        return _read_json(user_id, "tasks.json", {"date": today, "tasks": []})
 
 
-def save_tasks(data: dict) -> None:
+def save_tasks(user_id: str, data: dict) -> None:
     if DATABASE_URL:
         with _pg_conn() as conn:
             with conn.cursor() as cur:
-                cur.execute("DELETE FROM tasks WHERE date = %s", (data["date"],))
+                cur.execute(
+                    "DELETE FROM tasks WHERE user_id = %s AND date = %s",
+                    (user_id, data["date"]),
+                )
                 for t in data["tasks"]:
                     cur.execute(
-                        "INSERT INTO tasks (id, text, done, date) VALUES (%s, %s, %s, %s)",
-                        (t["id"], t["text"], t["done"], data["date"]),
+                        "INSERT INTO tasks (user_id, id, text, done, date) VALUES (%s, %s, %s, %s, %s)",
+                        (user_id, t["id"], t["text"], t["done"], data["date"]),
                     )
             conn.commit()
     else:
-        _write_json("tasks.json", data)
+        _write_json(user_id, "tasks.json", data)
 
 
-def load_calendar() -> dict:
+def load_calendar(user_id: str) -> dict:
     if DATABASE_URL:
         with _pg_conn() as conn:
             with conn.cursor() as cur:
                 cur.execute(
                     'SELECT task_id AS "taskId", task_text AS "taskText", hour, date, done '
-                    "FROM calendar_entries ORDER BY date, hour"
+                    "FROM calendar_entries WHERE user_id = %s ORDER BY date, hour",
+                    (user_id,),
                 )
                 entries = [dict(r) for r in cur.fetchall()]
         return {"entries": entries}
     else:
-        return _read_json("calendar.json", {"entries": []})
+        return _read_json(user_id, "calendar.json", {"entries": []})
 
 
-def save_calendar(data: dict) -> None:
+def save_calendar(user_id: str, data: dict) -> None:
     if DATABASE_URL:
         with _pg_conn() as conn:
             with conn.cursor() as cur:
-                cur.execute("DELETE FROM calendar_entries")
+                cur.execute(
+                    "DELETE FROM calendar_entries WHERE user_id = %s",
+                    (user_id,),
+                )
                 for e in data["entries"]:
                     cur.execute(
-                        "INSERT INTO calendar_entries (task_id, task_text, hour, date, done) "
-                        "VALUES (%s, %s, %s, %s, %s)",
-                        (e["taskId"], e["taskText"], e["hour"], e["date"], e["done"]),
+                        "INSERT INTO calendar_entries (user_id, task_id, task_text, hour, date, done) "
+                        "VALUES (%s, %s, %s, %s, %s, %s)",
+                        (user_id, e["taskId"], e["taskText"], e["hour"], e["date"], e["done"]),
                     )
             conn.commit()
     else:
-        _write_json("calendar.json", data)
+        _write_json(user_id, "calendar.json", data)
 
 
-def load_progress() -> dict:
+def load_progress(user_id: str) -> dict:
     if DATABASE_URL:
         with _pg_conn() as conn:
             with conn.cursor() as cur:
                 cur.execute(
                     "SELECT date, tasks_total, tasks_done, calendar_total, calendar_done "
-                    "FROM progress_history ORDER BY date"
+                    "FROM progress_history WHERE user_id = %s ORDER BY date",
+                    (user_id,),
                 )
                 records = [dict(r) for r in cur.fetchall()]
         return {"records": records}
     else:
-        return _read_json("progress_history.json", {"records": []})
+        return _read_json(user_id, "progress_history.json", {"records": []})
 
 
-def append_progress(record: dict) -> None:
+def append_progress(user_id: str, record: dict) -> None:
     if DATABASE_URL:
         with _pg_conn() as conn:
             with conn.cursor() as cur:
                 cur.execute(
-                    "INSERT INTO progress_history (date, tasks_total, tasks_done, calendar_total, calendar_done) "
-                    "VALUES (%s, %s, %s, %s, %s) "
-                    "ON CONFLICT (date) DO UPDATE SET "
+                    "INSERT INTO progress_history (user_id, date, tasks_total, tasks_done, calendar_total, calendar_done) "
+                    "VALUES (%s, %s, %s, %s, %s, %s) "
+                    "ON CONFLICT (user_id, date) DO UPDATE SET "
                     "tasks_total=EXCLUDED.tasks_total, tasks_done=EXCLUDED.tasks_done, "
                     "calendar_total=EXCLUDED.calendar_total, calendar_done=EXCLUDED.calendar_done",
-                    (record["date"], record["tasks_total"], record["tasks_done"],
+                    (user_id, record["date"], record["tasks_total"], record["tasks_done"],
                      record["calendar_total"], record["calendar_done"]),
                 )
             conn.commit()
     else:
-        history = _read_json("progress_history.json", {"records": []})
+        history = _read_json(user_id, "progress_history.json", {"records": []})
         history["records"].append(record)
-        _write_json("progress_history.json", history)
+        _write_json(user_id, "progress_history.json", history)
 
 
-def delete_old_calendar_entries(cutoff_date: str) -> None:
+def delete_old_calendar_entries(user_id: str, cutoff_date: str) -> None:
     if DATABASE_URL:
         with _pg_conn() as conn:
             with conn.cursor() as cur:
-                cur.execute("DELETE FROM calendar_entries WHERE date < %s", (cutoff_date,))
+                cur.execute(
+                    "DELETE FROM calendar_entries WHERE user_id = %s AND date < %s",
+                    (user_id, cutoff_date),
+                )
             conn.commit()

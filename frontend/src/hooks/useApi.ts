@@ -3,7 +3,7 @@ const DEBOUNCE_MS = 300;
 
 export async function apiGet<T>(path: string): Promise<T | null> {
   try {
-    const res = await fetch(`${API_BASE}${path}`);
+    const res = await fetch(`${API_BASE}${path}`, { credentials: "include" });
     if (!res.ok) throw new Error(res.statusText);
     return await res.json();
   } catch {
@@ -15,6 +15,7 @@ export async function apiPatch<T>(path: string, data: T): Promise<boolean> {
   try {
     const res = await fetch(`${API_BASE}${path}`, {
       method: "PATCH",
+      credentials: "include",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     });
