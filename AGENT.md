@@ -182,6 +182,48 @@ git push origin main
 - **CORS:** `allow_credentials=True`, origins: `localhost:5173` + `notions-7u3j.onrender.com`
 - **Фронтенд:** `credentials: "include"` в обоих fetch-вызовах (`useApi.ts`)
 
+## Код-стайл и линтеры
+
+Все линтеры проходят без ошибок. При внесении изменений — проверять перед коммитом.
+
+### Python (Ruff)
+
+- **Конфиг:** дефолтный Ruff (без секции `[tool.ruff]` в `pyproject.toml`)
+- **Target:** Python 3.12
+- **Макс. длина строки:** 88 символов
+- **Правила:** стандартный набор (E + F — pycodestyle errors + pyflakes)
+- **Импорты:** по одному на строку, стандартная библиотека → сторонние → локальные, абсолютные (`from backend.services.storage import ...`)
+- **Строки:** двойные кавычки
+- **Типизация:** type hints для параметров функций (`user_id: str`, `data: dict`, `-> None`)
+- **Команда:** `uv run ruff check backend/`
+
+### TypeScript / React (ESLint)
+
+- **Конфиг:** `frontend/eslint.config.js` — flat config
+- **Extends:** `js.configs.recommended` + `tseslint.configs.recommended` + `react-hooks` + `react-refresh`
+- **Target:** ES2023
+- **Strict mode:** включён (`tsconfig.app.json: "strict": true`)
+- **noUnusedLocals / noUnusedParameters:** включены
+- **JSX:** `react-jsx` (автоматический runtime, без `import React`)
+- **Именование:**
+  - Компоненты: `PascalCase` (`TaskList`, `DayCalendar`)
+  - Хуки: `camelCase` с префиксом `use` (`useTasks`, `useCalendar`)
+  - Переменные/функции: `camelCase` (`handleDrop`, `selectedTask`)
+  - CSS Modules классы: `camelCase` (`styles.dayColumns`, `styles.tapReady`)
+  - Константы: `UPPER_SNAKE_CASE` (`MAX_TASKS`, `STORAGE_KEY`)
+  - Типы/интерфейсы: `PascalCase` (`Task`, `CalendarEntry`, `Props`)
+- **Компоненты:** именованные экспорты (`export function TaskList`), default export только для `App`
+- **Стили:** CSS Modules (`.module.css`), CSS-переменные в `variables.css`
+- **Команды:** `cd frontend && npx eslint src/` и `cd frontend && npx tsc --noEmit`
+
+### Общие правила
+
+- Без `any` (eslint `@typescript-eslint/no-explicit-any` — только с `// eslint-disable` где неизбежно)
+- Без неиспользуемых переменных/импортов
+- `useCallback` / `useMemo` для функций и значений, передаваемых как пропсы
+- Barrel exports (`index.ts`) для каждого компонента
+- Без внешних UI-библиотек — только нативные API (HTML5 Drag & Drop, CSS Media Queries, `window.matchMedia`)
+
 ## TODO
 
 - [ ] Подключить фронтенд к бекенду для недельного прогресса (fetch вместо хардкода WEEK_CONFIG)
