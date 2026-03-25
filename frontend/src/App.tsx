@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Tabs } from "./components/Tabs";
 import { ProgressBar } from "./components/ProgressBar";
 import { InfoCard } from "./components/InfoCard";
@@ -12,6 +12,7 @@ import { getTopicsCardColor, getHoursCardColor } from "./utils/colors";
 import styles from "./App.module.css";
 
 const TAB_LABELS = ["День", "Неделя"];
+const MOBILE_MQ = "(max-width: 768px)";
 
 export default function App() {
   const [activeTab, setActiveTab] = useState(0);
@@ -19,6 +20,19 @@ export default function App() {
   const timeLeft = useTimer();
   const week = useWeekProgress();
   const { addEntry, removeEntry, moveEntry, toggleEntry, isSlotOccupied, getEntryAt, todayTotal: calTotal, todayDoneCount: calDone } = useCalendar();
+
+  const [selectedTask, setSelectedTask] = useState<{ id: string; text: string } | null>(null);
+  const [isMobile, setIsMobile] = useState(() => window.matchMedia(MOBILE_MQ).matches);
+
+  useEffect(() => {
+    const mq = window.matchMedia(MOBILE_MQ);
+    const handler = (e: MediaQueryListEvent) => {
+      setIsMobile(e.matches);
+      if (!e.matches) setSelectedTask(null);
+    };
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
 
   const total = tasks.length + calTotal;
   const totalDone = doneCount + calDone;
@@ -44,6 +58,28 @@ export default function App() {
     },
     [removeEntry, addTask]
   );
+
+  const handleSelectTask = useCallback((id: string, text: string) => {
+    setSelectedTask((prev) => prev?.id === id ? null : { id, text });
+  }, []);
+
+  const handleDeleteWithClear = useCallback((id: string) => {
+    deleteTask(id);
+    setSelectedTask((prev) => prev?.id === id ? null : prev);
+  }, [deleteTask]);
+
+  const handleTapEmptySlot = useCallback((hour: number) => {
+    if (!selectedTask) return;
+    addEntry(selectedTask.id, selectedTask.text, hour);
+    deleteTask(selectedTask.id);
+    setSelectedTask(null);
+  }, [selectedTask, addEntry, deleteTask]);
+
+  const handleTapOccupiedSlot = useCallback((taskId: string, taskText: string, date: string, hour: number) => {
+    if (!canAdd) return;
+    removeEntry(taskId, date, hour);
+    addTask(taskText);
+  }, [canAdd, removeEntry, addTask]);
 
   return (
     <div className={styles.widget}>
@@ -71,9 +107,11 @@ export default function App() {
                 tasks={tasks}
                 canAdd={canAdd}
                 onToggle={toggleTask}
-                onDelete={deleteTask}
+                onDelete={isMobile ? handleDeleteWithClear : deleteTask}
                 onAdd={addTask}
                 onReturnFromCalendar={handleReturnToList}
+                selectedTaskId={isMobile ? selectedTask?.id ?? null : undefined}
+                onSelectTask={isMobile ? handleSelectTask : undefined}
               />
             </div>
             <div className={styles.rightColumn}>
@@ -83,6 +121,9 @@ export default function App() {
                 onDrop={handleCalendarDrop}
                 onRemove={removeEntry}
                 onToggle={toggleEntry}
+                selectedTask={isMobile ? selectedTask : undefined}
+                onTapEmptySlot={isMobile ? handleTapEmptySlot : undefined}
+                onTapOccupiedSlot={isMobile ? handleTapOccupiedSlot : undefined}
               />
             </div>
           </div>

@@ -228,3 +228,17 @@
   background: rgba(255, 59, 48, 0.12);
   color: #ff3b30;
 }
+
+.tapReady {
+  background: rgba(0, 122, 255, 0.04);
+}
+
+@media (max-width: 768px) {
+  .calendar {
+    max-height: none;
+  }
+
+  .slot .removeBtn {
+    opacity: 1;
+  }
+}

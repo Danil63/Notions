@@ -11,9 +11,11 @@ interface Props {
   onDelete: (id: string) => void;
   onAdd: (text: string) => void;
   onReturnFromCalendar?: (taskId: string, taskText: string, date: string, hour: number) => void;
+  selectedTaskId?: string | null;
+  onSelectTask?: (id: string, text: string) => void;
 }
 
-export function TaskList({ tasks, canAdd, onToggle, onDelete, onAdd, onReturnFromCalendar }: Props) {
+export function TaskList({ tasks, canAdd, onToggle, onDelete, onAdd, onReturnFromCalendar, selectedTaskId, onSelectTask }: Props) {
   const [dragOver, setDragOver] = useState(false);
 
   function handleDragOver(e: DragEvent) {
@@ -58,6 +60,8 @@ export function TaskList({ tasks, canAdd, onToggle, onDelete, onAdd, onReturnFro
           done={task.done}
           onToggle={() => onToggle(task.id)}
           onDelete={() => onDelete(task.id)}
+          onSelect={onSelectTask ? () => onSelectTask(task.id, task.text) : undefined}
+          isSelected={selectedTaskId === task.id}
         />
       ))}
       {canAdd && <AddTask onAdd={onAdd} />}

@@ -8,6 +8,9 @@ interface Props {
   onDrop: (taskId: string, taskText: string, hour: number, fromCalendar?: boolean, fromDate?: string, fromHour?: number) => void;
   onRemove: (taskId: string, date: string, hour: number) => void;
   onToggle: (taskId: string, date: string, hour: number) => void;
+  selectedTask?: { id: string; text: string } | null;
+  onTapEmptySlot?: (hour: number) => void;
+  onTapOccupiedSlot?: (taskId: string, taskText: string, date: string, hour: number) => void;
 }
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
@@ -24,10 +27,10 @@ function formatToday(): string {
   });
 }
 
-export function DayCalendar({ getEntryAt, isSlotOccupied, onDrop, onRemove, onToggle }: Props) {
+export function DayCalendar({ getEntryAt, isSlotOccupied, onDrop, onRemove, onToggle, selectedTask, onTapEmptySlot, onTapOccupiedSlot }: Props) {
   const [currentHour, setCurrentHour] = useState(new Date().getHours());
   const [dragOverHour, setDragOverHour] = useState<number | null>(null);
-  const todayLabel = useMemo(formatToday, []);
+  const todayLabel = useMemo(() => formatToday(), []);
 
   useEffect(() => {
     const interval = setInterval(() => setCurrentHour(new Date().getHours()), 60_000);
@@ -69,6 +72,15 @@ export function DayCalendar({ getEntryAt, isSlotOccupied, onDrop, onRemove, onTo
     e.dataTransfer.effectAllowed = "move";
   }
 
+  function handleSlotClick(hour: number) {
+    const entry = getEntryAt(hour);
+    if (!entry && selectedTask && onTapEmptySlot) {
+      onTapEmptySlot(hour);
+    } else if (entry && onTapOccupiedSlot) {
+      onTapOccupiedSlot(entry.taskId, entry.taskText, entry.date, entry.hour);
+    }
+  }
+
   return (
     <div className={styles.calendar}>
       <div className={styles.header}>
@@ -79,6 +91,7 @@ export function DayCalendar({ getEntryAt, isSlotOccupied, onDrop, onRemove, onTo
         const entry = getEntryAt(hour);
         const isCurrent = hour === currentHour;
         const isDragOver = dragOverHour === hour && !entry;
+        const isTapReady = !entry && !!selectedTask;
 
         const slotClass = [
           styles.slot,
@@ -86,6 +99,7 @@ export function DayCalendar({ getEntryAt, isSlotOccupied, onDrop, onRemove, onTo
           entry ? styles.occupied : "",
           entry?.done ? styles.entryDone : "",
           isDragOver ? styles.dragOver : "",
+          isTapReady ? styles.tapReady : "",
         ]
           .filter(Boolean)
           .join(" ");
@@ -97,6 +111,7 @@ export function DayCalendar({ getEntryAt, isSlotOccupied, onDrop, onRemove, onTo
             onDragOver={(e) => handleDragOver(e, hour)}
             onDragLeave={handleDragLeave}
             onDrop={(e) => handleDrop(e, hour)}
+            onClick={() => handleSlotClick(hour)}
           >
             <span className={styles.time}>{formatHour(hour)}</span>
             <div
@@ -111,13 +126,13 @@ export function DayCalendar({ getEntryAt, isSlotOccupied, onDrop, onRemove, onTo
                     role="checkbox"
                     aria-checked={entry.done}
                     tabIndex={0}
-                    onClick={() => onToggle(entry.taskId, entry.date, entry.hour)}
+                    onClick={(e) => { e.stopPropagation(); onToggle(entry.taskId, entry.date, entry.hour); }}
                     onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onToggle(entry.taskId, entry.date, entry.hour); } }}
                   />
                   <span className={styles.taskText}>{entry.taskText}</span>
                   <button
                     className={styles.removeBtn}
-                    onClick={() => onRemove(entry.taskId, entry.date, entry.hour)}
+                    onClick={(e) => { e.stopPropagation(); onRemove(entry.taskId, entry.date, entry.hour); }}
                     title="Удалить"
                   >
                     &times;
