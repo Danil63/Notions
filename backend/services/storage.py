@@ -64,10 +64,7 @@ def init_storage() -> None:
     if DATABASE_URL:
         with _pg_conn() as conn:
             with conn.cursor() as cur:
-                cur.execute("DROP TABLE IF EXISTS tasks")
-                cur.execute("DROP TABLE IF EXISTS calendar_entries")
-                cur.execute("DROP TABLE IF EXISTS progress_history")
-                cur.execute("""CREATE TABLE tasks (
+                cur.execute("""CREATE TABLE IF NOT EXISTS tasks (
                     user_id TEXT NOT NULL,
                     id TEXT NOT NULL,
                     text TEXT NOT NULL,
@@ -75,8 +72,8 @@ def init_storage() -> None:
                     date TEXT NOT NULL,
                     PRIMARY KEY (user_id, id, date)
                 )""")
-                cur.execute("CREATE INDEX idx_tasks_user ON tasks (user_id)")
-                cur.execute("""CREATE TABLE calendar_entries (
+                cur.execute("CREATE INDEX IF NOT EXISTS idx_tasks_user ON tasks (user_id)")
+                cur.execute("""CREATE TABLE IF NOT EXISTS calendar_entries (
                     user_id TEXT NOT NULL,
                     task_id TEXT NOT NULL,
                     task_text TEXT NOT NULL,
@@ -85,8 +82,8 @@ def init_storage() -> None:
                     done BOOLEAN DEFAULT FALSE,
                     PRIMARY KEY (user_id, date, hour)
                 )""")
-                cur.execute("CREATE INDEX idx_calendar_user ON calendar_entries (user_id)")
-                cur.execute("""CREATE TABLE progress_history (
+                cur.execute("CREATE INDEX IF NOT EXISTS idx_calendar_user ON calendar_entries (user_id)")
+                cur.execute("""CREATE TABLE IF NOT EXISTS progress_history (
                     user_id TEXT NOT NULL,
                     date TEXT NOT NULL,
                     tasks_total INTEGER DEFAULT 0,
@@ -95,7 +92,7 @@ def init_storage() -> None:
                     calendar_done INTEGER DEFAULT 0,
                     PRIMARY KEY (user_id, date)
                 )""")
-                cur.execute("CREATE INDEX idx_progress_user ON progress_history (user_id)")
+                cur.execute("CREATE INDEX IF NOT EXISTS idx_progress_user ON progress_history (user_id)")
             conn.commit()
     else:
         DATA_DIR.mkdir(parents=True, exist_ok=True)
