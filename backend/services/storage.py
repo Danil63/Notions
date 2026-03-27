@@ -83,6 +83,7 @@ def init_storage() -> None:
                     PRIMARY KEY (user_id, date, hour)
                 )""")
                 cur.execute("CREATE INDEX IF NOT EXISTS idx_calendar_user ON calendar_entries (user_id)")
+                cur.execute("ALTER TABLE calendar_entries ADD COLUMN IF NOT EXISTS duration INTEGER DEFAULT 1")
                 cur.execute("""CREATE TABLE IF NOT EXISTS progress_history (
                     user_id TEXT NOT NULL,
                     date TEXT NOT NULL,
@@ -143,7 +144,7 @@ def load_calendar(user_id: str) -> dict:
         with _pg_conn() as conn:
             with conn.cursor() as cur:
                 cur.execute(
-                    'SELECT task_id AS "taskId", task_text AS "taskText", hour, date, done '
+                    'SELECT task_id AS "taskId", task_text AS "taskText", hour, duration, date, done '
                     "FROM calendar_entries WHERE user_id = %s ORDER BY date, hour",
                     (user_id,),
                 )
@@ -163,9 +164,9 @@ def save_calendar(user_id: str, data: dict) -> None:
                 )
                 for e in data["entries"]:
                     cur.execute(
-                        "INSERT INTO calendar_entries (user_id, task_id, task_text, hour, date, done) "
-                        "VALUES (%s, %s, %s, %s, %s, %s)",
-                        (user_id, e["taskId"], e["taskText"], e["hour"], e["date"], e["done"]),
+                        "INSERT INTO calendar_entries (user_id, task_id, task_text, hour, duration, date, done) "
+                        "VALUES (%s, %s, %s, %s, %s, %s, %s)",
+                        (user_id, e["taskId"], e["taskText"], e["hour"], e.get("duration", 1), e["date"], e["done"]),
                     )
             conn.commit()
     else:

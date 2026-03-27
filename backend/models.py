@@ -16,6 +16,7 @@ class CalendarEntry(BaseModel):
     taskId: str
     taskText: str
     hour: int
+    duration: int = 1
     date: str
     done: bool
 

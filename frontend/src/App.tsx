@@ -19,7 +19,7 @@ export default function App() {
   const { tasks, addTask, toggleTask, deleteTask, canAdd, doneCount } = useTasks();
   const timeLeft = useTimer();
   const week = useWeekProgress();
-  const { addEntry, removeEntry, moveEntry, toggleEntry, isSlotOccupied, getEntryAt, todayTotal: calTotal, todayDoneCount: calDone } = useCalendar();
+  const { addEntry, removeEntry, moveEntry, resizeEntry, toggleEntry, isSlotOccupied, todayEntries, todayTotal: calTotal, todayDoneCount: calDone } = useCalendar();
 
   const [selectedTask, setSelectedTask] = useState<{ id: string; text: string } | null>(null);
   const [isMobile, setIsMobile] = useState(() => window.matchMedia(MOBILE_MQ).matches);
@@ -116,11 +116,14 @@ export default function App() {
             </div>
             <div className={styles.rightColumn}>
               <DayCalendar
-                getEntryAt={getEntryAt}
+                todayEntries={todayEntries}
                 isSlotOccupied={isSlotOccupied}
                 onDrop={handleCalendarDrop}
                 onRemove={removeEntry}
                 onToggle={toggleEntry}
+                onResize={resizeEntry}
+                onMove={moveEntry}
+                onReturnToList={handleReturnToList}
                 selectedTask={isMobile ? selectedTask : undefined}
                 onTapEmptySlot={isMobile ? handleTapEmptySlot : undefined}
                 onTapOccupiedSlot={isMobile ? handleTapOccupiedSlot : undefined}

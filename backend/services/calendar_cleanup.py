@@ -12,6 +12,6 @@ def cleanup_calendar(user_id: str) -> CalendarData:
 
     raw = load_calendar(user_id)
     entries = raw.get("entries", [])
-    entries = [{**e, "done": e.get("done", False)} for e in entries]
+    entries = [{**e, "done": e.get("done", False), "duration": e.get("duration", 1)} for e in entries]
 
     return CalendarData(entries=entries)
