@@ -231,7 +231,6 @@ export default function App() {
             onToggle={toggleEntry}
             onResize={resizeEntry}
             onMove={moveEntry}
-            onReturnToList={handleReturnToList}
             selectedTask={isMobile ? selectedTask : undefined}
             onTapEmptySlot={isMobile ? handleTapEmptySlot : undefined}
             onTapOccupiedSlot={isMobile ? handleTapOccupiedSlot : undefined}

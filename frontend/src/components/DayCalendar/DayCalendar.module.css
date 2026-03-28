@@ -148,6 +148,8 @@
   transition: background 0.2s ease;
   position: relative;
   overflow: visible;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .cell:hover {
@@ -183,6 +185,8 @@
   border-radius: 8px;
   border: 1px solid rgba(52, 199, 89, 0.15);
   z-index: 1;
+  user-select: none;
+  -webkit-user-select: none;
   overflow: visible;
   cursor: grab;
   gap: 4px;

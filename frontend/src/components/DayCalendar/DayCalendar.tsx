@@ -27,7 +27,6 @@ interface Props {
   onToggle: (taskId: string, date: string, startMinute: number) => void;
   onResize: (taskId: string, date: string, startMinute: number, newDuration: number) => void;
   onMove: (taskId: string, fromDate: string, fromStartMinute: number, toStartMinute: number) => void;
-  onReturnToList?: (taskId: string, taskText: string, date: string, startMinute: number) => void;
   selectedTask?: { id: string; text: string; tag?: string; tagColor?: string } | null;
   onTapEmptySlot?: (startMinute: number) => void;
   onTapOccupiedSlot?: (taskId: string, taskText: string, date: string, startMinute: number) => void;
@@ -56,7 +55,6 @@ export function DayCalendar({
   onToggle,
   onResize,
   onMove,
-  onReturnToList,
   selectedTask,
   onTapEmptySlot,
   onTapOccupiedSlot,
@@ -335,21 +333,6 @@ export function DayCalendar({
                             }}
                             aria-label="Подзадачи"
                           >›</button>
-                        )}
-                        {onReturnToList && (
-                          <button
-                            className={styles.returnBtn}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onReturnToList(
-                                entry.taskId,
-                                entry.taskText,
-                                entry.date,
-                                entry.startMinute
-                              );
-                            }}
-                            title="Вернуть в список"
-                          />
                         )}
                         <button
                           className={styles.removeBtn}

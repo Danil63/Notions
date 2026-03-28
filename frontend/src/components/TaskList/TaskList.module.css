@@ -20,6 +20,8 @@
   margin-bottom: 6px;
   transition: background 0.2s ease, opacity 0.2s ease;
   cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .itemTop {
