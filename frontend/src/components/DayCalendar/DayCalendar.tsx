@@ -334,16 +334,6 @@ export function DayCalendar({
                             aria-label="Подзадачи"
                           >›</button>
                         )}
-                        <button
-                          className={styles.removeBtn}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onRemove(entry.taskId, entry.date, entry.startMinute);
-                          }}
-                          title="Удалить"
-                        >
-                          &times;
-                        </button>
                       </div>
                       {entry.subtasks && entry.subtasks.length > 0 && (
                         <div className={styles.entryProgressBar}>
