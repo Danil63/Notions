@@ -11,7 +11,7 @@ interface Props {
 
 export function TagManager({ tags, onAddTag, onDeleteTag }: Props) {
   const [name, setName] = useState("");
-  const [color, setColor] = useState(TAG_COLORS[0]);
+  const [color, setColor] = useState<string>(TAG_COLORS[0]);
   const [open, setOpen] = useState(false);
 
   function handleSave(): void {
