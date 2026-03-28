@@ -49,7 +49,15 @@ export function useTasks(selectedDate: string) {
 
     apiGet<TasksPayload>("/tasks").then((data) => {
       if (data && data.tasks) {
-        const pruned = pruneOldTasks(data.tasks);
+        const mapped = data.tasks.map((t) => {
+          const raw = t as Task & { tag_color?: string };
+          const tagColor = raw.tagColor ?? raw.tag_color;
+          const result: Task = { ...t };
+          if (tagColor !== undefined) result.tagColor = tagColor;
+          delete (result as Task & { tag_color?: string }).tag_color;
+          return result;
+        });
+        const pruned = pruneOldTasks(mapped);
         setAllTasks(pruned);
         saveToLocalStorage(pruned);
       } else {
@@ -99,6 +107,26 @@ export function useTasks(selectedDate: string) {
     });
   }, []);
 
+  const updateTaskTag = useCallback((id: string, tag: string, tagColor: string): void => {
+    setAllTasks((prev) => {
+      const next = prev.map((t) => (t.id === id ? { ...t, tag, tagColor } : t));
+      saveAll(next);
+      return next;
+    });
+  }, []);
+
+  const removeTaskTag = useCallback((id: string): void => {
+    setAllTasks((prev) => {
+      const next = prev.map((t) => {
+        if (t.id !== id) return t;
+        const updated: Task = { id: t.id, text: t.text, done: t.done, date: t.date };
+        return updated;
+      });
+      saveAll(next);
+      return next;
+    });
+  }, []);
+
   const tasks = useMemo(
     () => allTasks.filter((t) => t.date === selectedDate),
     [allTasks, selectedDate]
@@ -107,5 +135,5 @@ export function useTasks(selectedDate: string) {
   const canAdd = tasks.length < MAX_TASKS;
   const doneCount = useMemo(() => tasks.filter((t) => t.done).length, [tasks]);
 
-  return { tasks, allTasks, addTask, toggleTask, deleteTask, canAdd, doneCount };
+  return { tasks, allTasks, addTask, toggleTask, deleteTask, updateTaskTag, removeTaskTag, canAdd, doneCount };
 }

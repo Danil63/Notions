@@ -3,19 +3,20 @@ import type { CalendarEntry } from "../../types/task";
 import { usePointerResize } from "../../hooks/usePointerResize";
 import { usePointerMove } from "../../hooks/usePointerMove";
 import { formatFullDate } from "../../utils/dateUtils";
+import { hexToRgba } from "../../utils/colors";
 import styles from "./DayCalendar.module.css";
 
 interface Props {
   selectedDate: string;
   entries: CalendarEntry[];
   isSlotOccupied: (hour: number) => boolean;
-  onDrop: (taskId: string, taskText: string, hour: number, fromCalendar?: boolean, fromDate?: string, fromHour?: number) => void;
+  onDrop: (taskId: string, taskText: string, hour: number, fromCalendar?: boolean, fromDate?: string, fromHour?: number, tag?: string, tagColor?: string) => void;
   onRemove: (taskId: string, date: string, hour: number) => void;
   onToggle: (taskId: string, date: string, hour: number) => void;
   onResize: (taskId: string, date: string, hour: number, newDuration: number) => void;
   onMove: (taskId: string, fromDate: string, fromHour: number, toHour: number) => void;
   onReturnToList?: (taskId: string, taskText: string, date: string, hour: number) => void;
-  selectedTask?: { id: string; text: string } | null;
+  selectedTask?: { id: string; text: string; tag?: string; tagColor?: string } | null;
   onTapEmptySlot?: (hour: number) => void;
   onTapOccupiedSlot?: (taskId: string, taskText: string, date: string, hour: number) => void;
 }
@@ -66,8 +67,10 @@ export function DayCalendar({ selectedDate, entries, isSlotOccupied, onDrop, onR
     const fromCalendar = e.dataTransfer.getData("fromCalendar") === "true";
     const fromDate = e.dataTransfer.getData("calendarDate");
     const fromHour = Number(e.dataTransfer.getData("calendarHour"));
+    const tag = e.dataTransfer.getData("taskTag") || undefined;
+    const tagColor = e.dataTransfer.getData("taskTagColor") || undefined;
     if (taskId && taskText) {
-      onDrop(taskId, taskText, hour, fromCalendar, fromDate, fromHour);
+      onDrop(taskId, taskText, hour, fromCalendar, fromDate, fromHour, tag, tagColor);
     }
   }
 
@@ -132,6 +135,15 @@ export function DayCalendar({ selectedDate, entries, isSlotOccupied, onDrop, onR
         {entries.map((entry) => {
           const dur = entry.duration ?? 1;
           const key = `${entry.taskId}-${entry.hour}`;
+          const accentColor = entry.tagColor ?? "#34c759";
+          const entryStyle = {
+            "--row-start": entry.hour + 1,
+            "--row-span": dur,
+            background: entry.done
+              ? hexToRgba(accentColor, 0.05)
+              : `linear-gradient(135deg, ${hexToRgba(accentColor, 0.1)}, ${hexToRgba(accentColor, 0.06)})`,
+            borderColor: hexToRgba(accentColor, entry.done ? 0.1 : 0.15),
+          } as React.CSSProperties;
           return (
             <div
               key={key}
@@ -141,10 +153,7 @@ export function DayCalendar({ selectedDate, entries, isSlotOccupied, onDrop, onR
                 entry.done ? styles.entryDone : "",
                 dur > 1 ? styles.multiSlot : "",
               ].filter(Boolean).join(" ")}
-              style={{
-                "--row-start": entry.hour + 1,
-                "--row-span": dur,
-              } as React.CSSProperties}
+              style={entryStyle}
               title={entry.taskText}
               onPointerDown={(e) => handleMovePointerDown(
                 e,
@@ -159,13 +168,30 @@ export function DayCalendar({ selectedDate, entries, isSlotOccupied, onDrop, onR
               <div className={styles.entryContent}>
                 <div
                   className={`${styles.entryCheckbox} ${entry.done ? styles.entryChecked : ""}`}
+                  style={{
+                    borderColor: entry.done ? accentColor : hexToRgba(accentColor, 0.4),
+                    background: entry.done ? accentColor : "transparent",
+                  }}
                   role="checkbox"
                   aria-checked={entry.done}
                   tabIndex={0}
                   onClick={(e) => { e.stopPropagation(); onToggle(entry.taskId, entry.date, entry.hour); }}
                   onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onToggle(entry.taskId, entry.date, entry.hour); } }}
                 />
-                <span className={styles.taskText}>{entry.taskText}</span>
+                <span
+                  className={styles.taskText}
+                  style={{ color: entry.done ? "var(--color-text-muted)" : accentColor }}
+                >
+                  {entry.taskText}
+                </span>
+                {entry.tag && (
+                  <span
+                    className={styles.entryTagBadge}
+                    style={{ background: hexToRgba(accentColor, 0.15), color: accentColor }}
+                  >
+                    {entry.tag}
+                  </span>
+                )}
                 {onReturnToList && (
                   <button
                     className={styles.returnBtn}

@@ -3,6 +3,8 @@ export interface Task {
   text: string;
   done: boolean;
   date: string;
+  tag?: string;
+  tagColor?: string;
 }
 
 export interface CalendarEntry {
@@ -12,4 +14,12 @@ export interface CalendarEntry {
   duration: number;
   date: string;
   done: boolean;
+  tag?: string;
+  tagColor?: string;
+}
+
+export interface Tag {
+  id: string;
+  name: string;
+  color: string;
 }

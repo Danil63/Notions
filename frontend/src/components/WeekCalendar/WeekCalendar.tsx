@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback, useMemo, type DragEvent } from "react";
 import type { CalendarEntry } from "../../types/task";
+import { hexToRgba } from "../../utils/colors";
 import {
   getWeekDays,
   getWeekdayShort,
@@ -137,6 +138,7 @@ export function WeekCalendar({
         <div className={styles.timeGutter} />
         {weekDays.map((dateKey) => {
           const isToday = dateKey === today;
+          const isSelected = dateKey === selectedDate && !isToday;
           const isDragOver = dragOverDay === dateKey;
           return (
             <div
@@ -158,6 +160,7 @@ export function WeekCalendar({
                 className={[
                   styles.dayNumber,
                   isToday ? styles.dayNumberToday : "",
+                  isSelected ? styles.dayNumberSelected : "",
                 ]
                   .filter(Boolean)
                   .join(" ")}
@@ -243,6 +246,7 @@ interface WeekEntryProps {
 
 function WeekEntry({ entry }: WeekEntryProps) {
   const dur = entry.duration ?? 1;
+  const accentColor = entry.tagColor ?? "#34c759";
 
   function handleDragStart(e: DragEvent<HTMLDivElement>) {
     e.dataTransfer.setData("taskId", entry.taskId);
@@ -253,6 +257,14 @@ function WeekEntry({ entry }: WeekEntryProps) {
     e.dataTransfer.effectAllowed = "move";
   }
 
+  const entryStyle = {
+    "--dur": dur,
+    background: entry.done
+      ? hexToRgba(accentColor, 0.05)
+      : `linear-gradient(135deg, ${hexToRgba(accentColor, 0.1)}, ${hexToRgba(accentColor, 0.06)})`,
+    borderColor: hexToRgba(accentColor, entry.done ? 0.1 : 0.15),
+  } as React.CSSProperties;
+
   return (
     <div
       className={[
@@ -262,11 +274,7 @@ function WeekEntry({ entry }: WeekEntryProps) {
       ]
         .filter(Boolean)
         .join(" ")}
-      style={
-        {
-          "--dur": dur,
-        } as React.CSSProperties
-      }
+      style={entryStyle}
       draggable
       onDragStart={handleDragStart}
       title={entry.taskText}

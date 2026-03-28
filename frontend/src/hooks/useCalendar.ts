@@ -52,7 +52,15 @@ export function useCalendar(selectedDate: string) {
 
     apiGet<CalendarPayload>("/calendar").then((data) => {
       if (data && data.entries) {
-        const normalized = normalizeDuration(data.entries);
+        const mapped = data.entries.map((e) => {
+          const raw = e as CalendarEntry & { tag_color?: string };
+          const tagColor = raw.tagColor ?? raw.tag_color;
+          const result: CalendarEntry = { ...e };
+          if (tagColor !== undefined) result.tagColor = tagColor;
+          delete (result as CalendarEntry & { tag_color?: string }).tag_color;
+          return result;
+        });
+        const normalized = normalizeDuration(mapped);
         setEntries(normalized);
         saveToLocalStorage(normalized);
       } else {
@@ -70,16 +78,16 @@ export function useCalendar(selectedDate: string) {
   }
 
   const addEntry = useCallback(
-    (taskId: string, taskText: string, hour: number) => {
+    (taskId: string, taskText: string, hour: number, tag?: string, tagColor?: string) => {
       setEntries((prev) => {
         const occupied = prev.some(
           (e) => e.date === selectedDate && coversHour(e, hour)
         );
         if (occupied) return prev;
-        const next = [
-          ...prev,
-          { taskId, taskText, hour, duration: 1, date: selectedDate, done: false },
-        ];
+        const entry: CalendarEntry = { taskId, taskText, hour, duration: 1, date: selectedDate, done: false };
+        if (tag !== undefined) entry.tag = tag;
+        if (tagColor !== undefined) entry.tagColor = tagColor;
+        const next = [...prev, entry];
         saveEntries(next);
         return next;
       });
