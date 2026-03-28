@@ -232,7 +232,8 @@ export function DayCalendar({
                     e.dataTransfer.effectAllowed = "move";
                   }
 
-                  const isExpanded = expandedEntry === key;
+                  const canHaveSubtasks = entry.duration >= 120;
+                  const isExpanded = canHaveSubtasks && expandedEntry === key;
                   const entryProgress = entry.subtasks && entry.subtasks.length > 0
                     ? entry.subtasks.filter(s => s.done).length / entry.subtasks.length
                     : 0;
@@ -324,15 +325,17 @@ export function DayCalendar({
                             {entry.tag}
                           </span>
                         )}
-                        <button
-                          className={`${styles.entryExpandBtn} ${isExpanded ? styles.entryExpandBtnOpen : ''}`}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setExpandedEntry(prev => prev === key ? null : key);
-                            setEntrySubtaskInput('');
-                          }}
-                          aria-label="Подзадачи"
-                        >›</button>
+                        {canHaveSubtasks && (
+                          <button
+                            className={`${styles.entryExpandBtn} ${isExpanded ? styles.entryExpandBtnOpen : ''}`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setExpandedEntry(prev => prev === key ? null : key);
+                              setEntrySubtaskInput('');
+                            }}
+                            aria-label="Подзадачи"
+                          >›</button>
+                        )}
                         {onReturnToList && (
                           <button
                             className={styles.returnBtn}
