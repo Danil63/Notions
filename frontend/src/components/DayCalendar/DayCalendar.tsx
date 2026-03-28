@@ -136,7 +136,7 @@ export function DayCalendar({
 
     if (!occupiedEntry && selectedTask && onTapEmptySlot) {
       onTapEmptySlot(snappedMinute);
-    } else if (occupiedEntry && onTapOccupiedSlot) {
+    } else if (occupiedEntry && selectedTask && onTapOccupiedSlot) {
       onTapOccupiedSlot(occupiedEntry.taskId, occupiedEntry.taskText, occupiedEntry.date, occupiedEntry.startMinute);
     }
   }
