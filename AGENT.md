@@ -4,7 +4,7 @@ Full-stack приложение для трекинга задач и прогр
 
 ## Цель проекта
 
-Реализовать To-Do лист с расширенным набором инструментов: дневной/недельный прогресс, таймер до конца дня, цветовая индикация состояния, ежедневный авто-сброс задач.
+Реализовать To-Do лист с расширенным набором инструментов: навигация по дням (каждый день — независимая страница), дневной/недельный прогресс, таймер до конца дня, цветовая индикация состояния.
 
 ## Стек
 
@@ -36,8 +36,8 @@ Notions/
 ├── frontend/                — FRONTEND (React + TypeScript + Vite)
 │   ├── src/
 │   │   ├── main.tsx         — точка входа React
-│   │   ├── App.tsx          — корневой компонент (табы, прогресс, задачи, мобильный tap-to-select)
-│   │   ├── App.module.css   — лейаут + mobile media query (≤768px)
+│   │   ├── App.tsx          — корневой компонент (мобильный: WeekDayStrip + свайпы, десктоп: табы)
+│   │   ├── App.module.css   — лейаут + mobile media query (≤768px) + swipeContainer
 │   │   ├── components/
 │   │   │   ├── DayCalendar/ — дневной календарь с часовыми слотами (drag & drop + mobile tap)
 │   │   │   │   ├── DayCalendar.tsx, DayCalendar.module.css, index.ts
@@ -45,20 +45,25 @@ Notions/
 │   │   │   │   ├── InfoCard.tsx, InfoCard.module.css, index.ts
 │   │   │   ├── ProgressBar/ — прогресс-бар (процент заполнения)
 │   │   │   │   ├── ProgressBar.tsx, ProgressBar.module.css, index.ts
-│   │   │   ├── Tabs/        — переключатель вкладок (День / Неделя)
+│   │   │   ├── Tabs/        — переключатель вкладок День/Неделя (только десктоп)
 │   │   │   │   ├── Tabs.tsx, Tabs.module.css, index.ts
-│   │   │   └── TaskList/    — список задач (toggle, delete, add, drag, mobile tap-select; макс. 5)
+│   │   │   ├── WeekDayStrip/ — полоска дней недели в стиле iOS Calendar (только мобильный)
+│   │   │   │   ├── WeekDayStrip.tsx, WeekDayStrip.module.css, index.ts
+│   │   │   └── TaskList/    — список задач (toggle, delete, add, drag, mobile tap-select; макс. 5 на день)
 │   │   │       ├── TaskList.tsx, TaskItem.tsx, AddTask.tsx
 │   │   │       ├── TaskList.module.css, index.ts
 │   │   ├── hooks/
-│   │   │   ├── useCalendar.ts       — CRUD календарных записей + localStorage + автоочистка >7 дней
-│   │   │   ├── useTasks.ts          — CRUD задач + localStorage + авто-сброс по дате
+│   │   │   ├── useCalendar.ts       — CRUD календарных записей по selectedDate + localStorage + автоочистка >365 дней
+│   │   │   ├── useSelectedDate.ts   — навигация по дням (сегодня → +365 дней)
+│   │   │   ├── useSwipe.ts          — обработка touch-свайпов для навигации между днями
+│   │   │   ├── useTasks.ts          — CRUD задач по selectedDate + localStorage, лимит 5 на день
 │   │   │   ├── useTimer.ts          — обратный отсчёт до конца дня (каждую секунду)
 │   │   │   └── useWeekProgress.ts   — расчёт прогресса по неделе
 │   │   ├── config/
 │   │   │   └── weekConfig.ts        — конфигурация недельных целей
 │   │   ├── utils/
-│   │   │   └── colors.ts            — логика выбора цвета карточек по состоянию
+│   │   │   ├── colors.ts            — логика выбора цвета карточек по состоянию
+│   │   │   └── dateUtils.ts         — утилиты дат (getTodayKey, formatFullDate, getWeekDays, addDays и др.)
 │   │   ├── types/
 │   │   │   └── task.ts              — интерфейсы Task + CalendarEntry
 │   │   └── styles/
@@ -89,8 +94,8 @@ Notions/
 │   │   └── calendar.py      — GET/PATCH /api/calendar
 │   └── services/
 │       ├── storage.py       — dual storage: PostgreSQL (prod) / JSON files (local dev), данные по user_id
-│       ├── day_reset.py     — авто-сброс задач при смене дня + запись прогресса
-│       └── calendar_cleanup.py — очистка записей старше 7 дней
+│       ├── day_reset.py     — очистка задач старше 365 дней (cleanup_old_tasks)
+│       └── calendar_cleanup.py — очистка записей старше 365 дней
 ├── data/                    — JSON-файлы (локальная разработка), подпапки по user_id
 ├── render.yaml              — Render Blueprint (конфигурация деплоя)
 └── Dockerfile               — multi-stage: сборка фронтенда + Python-сервер
@@ -100,20 +105,23 @@ Notions/
 
 ### Компоненты (frontend/src/components/)
 
-| Компонент      | Файлы                                    | Назначение                                    |
-|----------------|------------------------------------------|-----------------------------------------------|
-| `DayCalendar`  | DayCalendar.tsx + .module.css + index.ts  | Дневной календарь: 24 часовых слота, drag & drop (десктоп) + tap-to-select (мобильный), localStorage (7 дней) |
-| `ProgressBar`  | ProgressBar.tsx + .module.css + index.ts  | Полоса прогресса, принимает `percent: number`  |
-| `Tabs`         | Tabs.tsx + .module.css + index.ts         | Переключатель вкладок, принимает labels/index  |
-| `InfoCard`     | InfoCard.tsx + .module.css + index.ts     | Карточка метрики с динамическим цветом фона    |
-| `TaskList`     | TaskList.tsx, TaskItem.tsx, AddTask.tsx    | Список задач: toggle, delete, drag, add (макс. 5), tap-select на мобильных |
+| Компонент       | Файлы                                    | Назначение                                    |
+|-----------------|------------------------------------------|-----------------------------------------------|
+| `DayCalendar`   | DayCalendar.tsx + .module.css + index.ts  | Дневной календарь: 24 часовых слота, принимает `selectedDate` + `entries`, drag & drop (десктоп) + tap-to-select (мобильный) |
+| `ProgressBar`   | ProgressBar.tsx + .module.css + index.ts  | Полоса прогресса, принимает `percent: number`  |
+| `Tabs`          | Tabs.tsx + .module.css + index.ts         | Переключатель вкладок День/Неделя (только десктоп >768px) |
+| `WeekDayStrip`  | WeekDayStrip.tsx + .module.css + index.ts | Полоска дней недели в стиле iOS Calendar (только мобильный ≤768px): 7 дней, красный кружок на сегодня, тап для переключения |
+| `InfoCard`      | InfoCard.tsx + .module.css + index.ts     | Карточка метрики с динамическим цветом фона    |
+| `TaskList`      | TaskList.tsx, TaskItem.tsx, AddTask.tsx    | Список задач: toggle, delete, drag, add (макс. 5 на день), tap-select на мобильных |
 
 ### Хуки (frontend/src/hooks/)
 
 | Хук                | Назначение                                                                |
 |--------------------|---------------------------------------------------------------------------|
-| `useCalendar`      | CRUD календарных записей в localStorage. Хранение 7 дней, автоочистка старых записей. |
-| `useTasks`         | CRUD задач через localStorage. Авто-сброс при смене дня. Лимит: 5 задач. |
+| `useCalendar`      | `useCalendar(selectedDate)` — CRUD календарных записей по выбранной дате. Хранение 365 дней, автоочистка. Возвращает `dateEntries`, `dateTotal`, `dateDoneCount`. |
+| `useSelectedDate`  | Навигация по дням: `selectedDate`, `goToNextDay`, `goToPrevDay`, `goToDate`. Диапазон: сегодня → +365 дней. |
+| `useSwipe`         | `useSwipe(onSwipeLeft, onSwipeRight)` — touch-свайпы для навигации между днями. Порог 50px, игнорирует `[data-resize-handle]`. |
+| `useTasks`         | `useTasks(selectedDate)` — CRUD задач по выбранной дате. Единый массив, фильтр по дате. Лимит: 5 задач на день. |
 | `useTimer`         | Строка "Xч Yм Zс" до конца дня. Обновляется каждую секунду.             |
 | `useWeekProgress`  | Расчёт прогресса по неделе из `config/weekConfig.ts`.                    |
 
@@ -127,8 +135,11 @@ Notions/
 - **a11y** — чекбоксы доступны с клавиатуры (`role`, `aria-checked`, `tabIndex`, `onKeyDown`)
 - **Конфигурация** вынесена в `config/weekConfig.ts` — в будущем заменится на fetch с бекенда
 - **HTML5 Drag & Drop** — нативный API для перетаскивания задач из TaskList в DayCalendar на десктопе (без внешних библиотек)
+- **Навигация по дням (мобильный)** — каждый день — независимая страница со своими задачами и календарными записями. `WeekDayStrip` вверху (полоска 7 дней текущей недели, iOS Calendar дизайн: красный кружок #ff3b30 на сегодня, серый фон на выбранном). Свайпы влево/вправо для переключения дней. Диапазон: от сегодня до +365 дней
+- **Задачи привязаны к дате** — каждая задача имеет поле `date`. Лимит 5 задач на каждый день отдельно. Нет авто-сброса — задачи живут на своём дне. Очистка старше 365 дней
 - **Tap-to-select (мобильный)** — на ≤768px: тап по задаче → выделение (синяя обводка), тап по пустому слоту → перенос, тап по занятому слоту → возврат в список. Определение мобильного режима через `window.matchMedia`, стили через CSS Media Query
 - **Лейаут вкладки "День"** — прогресс-бар + инфо-карточки сверху на всю ширину, под ними двухколоночный лейаут: задачи (35%) слева, календарь (65%) справа. На мобильных (≤768px) — одноколоночный: задачи сверху, календарь снизу
+- **Адаптивный UI** — мобильный (≤768px): `WeekDayStrip` + свайпы, вкладка "Неделя" скрыта. Десктоп (>768px): табы "День/Неделя", без изменений
 - **macOS-дизайн календаря** — backdrop-filter blur (frosted glass), многослойные тени, скруглённые углы 14px, системные цвета Apple (#007aff синий, #34c759 зелёный, #ff3b30 красный), кастомный тонкий скроллбар, заголовок с датой, индикатор текущего часа (синяя полоска слева), SF-шрифты в font-family
 
 ## Widget (standalone): архитектура
@@ -218,6 +229,27 @@ git push origin main
 
 ### Общие правила
 
+- **CQS (Command Query Separation)** — каждая функция либо **команда** (изменяет состояние, ничего не возвращает), либо **запрос** (возвращает данные, ничего не изменяет). Не совмещать оба действия в одной функции.
+- **Именованные аргументы при вызове** — всегда передавать аргументы по имени (keyword arguments), а не позиционно. Это делает вызовы читаемыми и защищает от ошибок при изменении порядка параметров:
+  ```python
+  # Правильно
+  make(shape="circle", x=300, y=150, radius=10, fill=False)
+
+  # Неправильно
+  make("circle", 300, 150, 10, None, 2.5, False)
+  ```
+- **Без мутабельных значений по умолчанию** — никогда не использовать `[]`, `{}`, `set()` как дефолтное значение параметра. Использовать `None` и создавать внутри функции:
+  ```python
+  # Правильно
+  def add_scores(score, scores=None):
+      if scores is None:
+          scores = []
+      scores.append(score)
+
+  # Неправильно — список общий между вызовами
+  def add_scores(score, scores=[]):
+      scores.append(score)
+  ```
 - Без `any` (eslint `@typescript-eslint/no-explicit-any` — только с `// eslint-disable` где неизбежно)
 - Без неиспользуемых переменных/импортов
 - `useCallback` / `useMemo` для функций и значений, передаваемых как пропсы

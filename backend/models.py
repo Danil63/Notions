@@ -5,10 +5,10 @@ class Task(BaseModel):
     id: str
     text: str
     done: bool
+    date: str
 
 
 class TasksData(BaseModel):
-    date: str
     tasks: list[Task]
 
 

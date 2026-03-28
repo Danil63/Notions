@@ -3,7 +3,7 @@ from datetime import date, timedelta
 from backend.models import CalendarData
 from backend.services.storage import load_calendar, delete_old_calendar_entries
 
-MAX_AGE_DAYS = 7
+MAX_AGE_DAYS = 365
 
 
 def cleanup_calendar(user_id: str) -> CalendarData:

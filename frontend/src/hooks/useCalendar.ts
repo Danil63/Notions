@@ -1,17 +1,13 @@
 import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import type { CalendarEntry } from "../types/task";
 import { apiGet, apiPatch, debounce } from "./useApi";
+import { addDays, getTodayKey, getWeekDays } from "../utils/dateUtils";
 
 const STORAGE_KEY = "notion_calendar";
-const MAX_AGE_DAYS = 7;
+const MAX_AGE_DAYS = 365;
 
 interface CalendarPayload {
   entries: CalendarEntry[];
-}
-
-function getTodayKey(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
 function normalizeDuration(entries: CalendarEntry[]): CalendarEntry[] {
@@ -27,9 +23,7 @@ function loadEntries(): CalendarEntry[] {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return [];
     const entries: CalendarEntry[] = normalizeDuration(JSON.parse(raw));
-    const cutoff = new Date();
-    cutoff.setDate(cutoff.getDate() - MAX_AGE_DAYS);
-    const cutoffKey = `${cutoff.getFullYear()}-${String(cutoff.getMonth() + 1).padStart(2, "0")}-${String(cutoff.getDate()).padStart(2, "0")}`;
+    const cutoffKey = addDays(getTodayKey(), -MAX_AGE_DAYS);
     const fresh = entries.filter((e) => e.date >= cutoffKey);
     if (fresh.length !== entries.length) {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(fresh));
@@ -48,7 +42,7 @@ const debouncedSync = debounce((entries: CalendarEntry[]) => {
   apiPatch<CalendarPayload>("/calendar", { entries });
 });
 
-export function useCalendar() {
+export function useCalendar(selectedDate: string) {
   const [entries, setEntries] = useState<CalendarEntry[]>(loadEntries);
   const initialized = useRef(false);
 
@@ -75,16 +69,23 @@ export function useCalendar() {
     debouncedSync(entries);
   }
 
-  const addEntry = useCallback((taskId: string, taskText: string, hour: number) => {
-    setEntries((prev) => {
-      const date = getTodayKey();
-      const occupied = prev.some((e) => e.date === date && coversHour(e, hour));
-      if (occupied) return prev;
-      const next = [...prev, { taskId, taskText, hour, duration: 1, date, done: false }];
-      saveEntries(next);
-      return next;
-    });
-  }, []);
+  const addEntry = useCallback(
+    (taskId: string, taskText: string, hour: number) => {
+      setEntries((prev) => {
+        const occupied = prev.some(
+          (e) => e.date === selectedDate && coversHour(e, hour)
+        );
+        if (occupied) return prev;
+        const next = [
+          ...prev,
+          { taskId, taskText, hour, duration: 1, date: selectedDate, done: false },
+        ];
+        saveEntries(next);
+        return next;
+      });
+    },
+    [selectedDate]
+  );
 
   const removeEntry = useCallback((taskId: string, date: string, hour: number) => {
     setEntries((prev) => {
@@ -96,75 +97,124 @@ export function useCalendar() {
     });
   }, []);
 
-  const moveEntry = useCallback((taskId: string, fromDate: string, fromHour: number, toHour: number) => {
-    setEntries((prev) => {
-      const entry = prev.find((e) => e.taskId === taskId && e.date === fromDate && e.hour === fromHour);
-      if (!entry) return prev;
-      const dur = entry.duration ?? 1;
-      if (toHour < 0 || toHour + dur > 24) return prev;
-      const others = prev.filter((e) => !(e.taskId === taskId && e.date === fromDate && e.hour === fromHour));
-      const todayKey = getTodayKey();
-      for (let h = toHour; h < toHour + dur; h++) {
-        if (others.some((e) => e.date === todayKey && coversHour(e, h))) return prev;
-      }
-      const next = prev.map((e) =>
-        e.taskId === taskId && e.date === fromDate && e.hour === fromHour
-          ? { ...e, hour: toHour }
-          : e
-      );
-      saveEntries(next);
-      return next;
-    });
-  }, []);
-
-  const resizeEntry = useCallback((taskId: string, date: string, hour: number, newDuration: number) => {
-    setEntries((prev) => {
-      if (newDuration < 1 || hour + newDuration > 24) return prev;
-      const entry = prev.find((e) => e.taskId === taskId && e.date === date && e.hour === hour);
-      if (!entry) return prev;
-      const oldDur = entry.duration ?? 1;
-      if (newDuration > oldDur) {
-        const others = prev.filter((e) => !(e.taskId === taskId && e.date === date && e.hour === hour));
-        for (let h = hour + oldDur; h < hour + newDuration; h++) {
-          if (others.some((o) => o.date === date && coversHour(o, h))) return prev;
+  const moveEntry = useCallback(
+    (taskId: string, fromDate: string, fromHour: number, toHour: number) => {
+      setEntries((prev) => {
+        const entry = prev.find(
+          (e) => e.taskId === taskId && e.date === fromDate && e.hour === fromHour
+        );
+        if (!entry) return prev;
+        const dur = entry.duration ?? 1;
+        if (toHour < 0 || toHour + dur > 24) return prev;
+        const others = prev.filter(
+          (e) => !(e.taskId === taskId && e.date === fromDate && e.hour === fromHour)
+        );
+        for (let h = toHour; h < toHour + dur; h++) {
+          if (others.some((e) => e.date === selectedDate && coversHour(e, h)))
+            return prev;
         }
-      }
-      const next = prev.map((e) =>
-        e.taskId === taskId && e.date === date && e.hour === hour
-          ? { ...e, duration: newDuration }
-          : e
-      );
-      saveEntries(next);
-      return next;
-    });
-  }, []);
+        const next = prev.map((e) =>
+          e.taskId === taskId && e.date === fromDate && e.hour === fromHour
+            ? { ...e, hour: toHour }
+            : e
+        );
+        saveEntries(next);
+        return next;
+      });
+    },
+    [selectedDate]
+  );
 
-  const toggleEntry = useCallback((taskId: string, date: string, hour: number) => {
-    setEntries((prev) => {
-      const next = prev.map((e) =>
-        e.taskId === taskId && e.date === date && e.hour === hour
-          ? { ...e, done: !e.done }
-          : e
-      );
-      saveEntries(next);
-      return next;
-    });
-  }, []);
+  const resizeEntry = useCallback(
+    (taskId: string, date: string, hour: number, newDuration: number) => {
+      setEntries((prev) => {
+        if (newDuration < 1 || hour + newDuration > 24) return prev;
+        const entry = prev.find(
+          (e) => e.taskId === taskId && e.date === date && e.hour === hour
+        );
+        if (!entry) return prev;
+        const oldDur = entry.duration ?? 1;
+        if (newDuration > oldDur) {
+          const others = prev.filter(
+            (e) => !(e.taskId === taskId && e.date === date && e.hour === hour)
+          );
+          for (let h = hour + oldDur; h < hour + newDuration; h++) {
+            if (others.some((o) => o.date === date && coversHour(o, h)))
+              return prev;
+          }
+        }
+        const next = prev.map((e) =>
+          e.taskId === taskId && e.date === date && e.hour === hour
+            ? { ...e, duration: newDuration }
+            : e
+        );
+        saveEntries(next);
+        return next;
+      });
+    },
+    []
+  );
 
-  const todayEntries = entries.filter((e) => e.date === getTodayKey());
+  const toggleEntry = useCallback(
+    (taskId: string, date: string, hour: number) => {
+      setEntries((prev) => {
+        const next = prev.map((e) =>
+          e.taskId === taskId && e.date === date && e.hour === hour
+            ? { ...e, done: !e.done }
+            : e
+        );
+        saveEntries(next);
+        return next;
+      });
+    },
+    []
+  );
+
+  const dateEntries = useMemo(
+    () => entries.filter((e) => e.date === selectedDate),
+    [entries, selectedDate]
+  );
 
   const isSlotOccupied = useCallback(
-    (hour: number) => todayEntries.some((e) => coversHour(e, hour)),
-    [todayEntries]
+    (hour: number) => dateEntries.some((e) => coversHour(e, hour)),
+    [dateEntries]
   );
 
   const getEntryAt = useCallback(
-    (hour: number) => todayEntries.find((e) => coversHour(e, hour)) ?? null,
-    [todayEntries]
+    (hour: number) => dateEntries.find((e) => coversHour(e, hour)) ?? null,
+    [dateEntries]
   );
 
-  const todayTotal = todayEntries.length;
-  const todayDoneCount = useMemo(() => todayEntries.filter((e) => e.done).length, [todayEntries]);
+  const dateTotal = dateEntries.length;
+  const dateDoneCount = useMemo(
+    () => dateEntries.filter((e) => e.done).length,
+    [dateEntries]
+  );
 
-  return { entries, todayEntries, addEntry, removeEntry, moveEntry, resizeEntry, toggleEntry, isSlotOccupied, getEntryAt, todayTotal, todayDoneCount };
+  /** Query: возвращает записи для заданной даты (не мутирует состояние) */
+  const getEntriesForDate = useCallback(
+    (date: string): CalendarEntry[] => entries.filter((e) => e.date === date),
+    [entries]
+  );
+
+  const weekEntries = useMemo(() => {
+    const weekSet = new Set(getWeekDays(selectedDate));
+    return entries.filter((e) => weekSet.has(e.date));
+  }, [entries, selectedDate]);
+
+  return {
+    entries,
+    dateEntries,
+    addEntry,
+    removeEntry,
+    moveEntry,
+    resizeEntry,
+    toggleEntry,
+    isSlotOccupied,
+    getEntryAt,
+    getEntriesForDate,
+    weekEntries,
+    dateTotal,
+    dateDoneCount,
+  };
 }

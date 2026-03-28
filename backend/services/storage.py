@@ -1,7 +1,6 @@
 import json
 import os
 import threading
-from datetime import date
 from pathlib import Path
 from typing import Any
 
@@ -101,42 +100,36 @@ def init_storage() -> None:
 
 def load_tasks(user_id: str) -> dict:
     if DATABASE_URL:
-        today = date.today().isoformat()
         with _pg_conn() as conn:
             with conn.cursor() as cur:
                 cur.execute(
-                    "SELECT DISTINCT date FROM tasks WHERE user_id = %s ORDER BY date DESC LIMIT 1",
+                    "SELECT id, text, done, date FROM tasks WHERE user_id = %s ORDER BY date",
                     (user_id,),
                 )
-                row = cur.fetchone()
-                task_date = row["date"] if row else today
-                cur.execute(
-                    "SELECT id, text, done FROM tasks WHERE user_id = %s AND date = %s",
-                    (user_id, task_date),
-                )
                 tasks = [dict(r) for r in cur.fetchall()]
-        return {"date": task_date, "tasks": tasks}
+        return {"tasks": tasks}
     else:
-        today = date.today().isoformat()
-        return _read_json(user_id, "tasks.json", {"date": today, "tasks": []})
+        return _read_json(user_id=user_id, filename="tasks.json", default={"tasks": []})
 
 
 def save_tasks(user_id: str, data: dict) -> None:
     if DATABASE_URL:
+        dates = {t["date"] for t in data["tasks"]}
         with _pg_conn() as conn:
             with conn.cursor() as cur:
-                cur.execute(
-                    "DELETE FROM tasks WHERE user_id = %s AND date = %s",
-                    (user_id, data["date"]),
-                )
+                for task_date in dates:
+                    cur.execute(
+                        "DELETE FROM tasks WHERE user_id = %s AND date = %s",
+                        (user_id, task_date),
+                    )
                 for t in data["tasks"]:
                     cur.execute(
                         "INSERT INTO tasks (user_id, id, text, done, date) VALUES (%s, %s, %s, %s, %s)",
-                        (user_id, t["id"], t["text"], t["done"], data["date"]),
+                        (user_id, t["id"], t["text"], t["done"], t["date"]),
                     )
             conn.commit()
     else:
-        _write_json(user_id, "tasks.json", data)
+        _write_json(user_id=user_id, filename="tasks.json", data=data)
 
 
 def load_calendar(user_id: str) -> dict:
@@ -206,6 +199,21 @@ def append_progress(user_id: str, record: dict) -> None:
         history = _read_json(user_id, "progress_history.json", {"records": []})
         history["records"].append(record)
         _write_json(user_id, "progress_history.json", history)
+
+
+def delete_old_tasks(user_id: str, cutoff_date: str) -> None:
+    if DATABASE_URL:
+        with _pg_conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "DELETE FROM tasks WHERE user_id = %s AND date < %s",
+                    (user_id, cutoff_date),
+                )
+            conn.commit()
+    else:
+        raw = _read_json(user_id=user_id, filename="tasks.json", default={"tasks": []})
+        filtered = [t for t in raw.get("tasks", []) if t.get("date", "") >= cutoff_date]
+        _write_json(user_id=user_id, filename="tasks.json", data={"tasks": filtered})
 
 
 def delete_old_calendar_entries(user_id: str, cutoff_date: str) -> None:

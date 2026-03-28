@@ -2,10 +2,12 @@ import { useState, useEffect, useMemo, useRef, useCallback, Fragment, type DragE
 import type { CalendarEntry } from "../../types/task";
 import { usePointerResize } from "../../hooks/usePointerResize";
 import { usePointerMove } from "../../hooks/usePointerMove";
+import { formatFullDate } from "../../utils/dateUtils";
 import styles from "./DayCalendar.module.css";
 
 interface Props {
-  todayEntries: CalendarEntry[];
+  selectedDate: string;
+  entries: CalendarEntry[];
   isSlotOccupied: (hour: number) => boolean;
   onDrop: (taskId: string, taskText: string, hour: number, fromCalendar?: boolean, fromDate?: string, fromHour?: number) => void;
   onRemove: (taskId: string, date: string, hour: number) => void;
@@ -24,25 +26,17 @@ function formatHour(h: number): string {
   return `${String(h).padStart(2, "0")}:00`;
 }
 
-function formatToday(): string {
-  return new Date().toLocaleDateString("ru-RU", {
-    weekday: "short",
-    day: "numeric",
-    month: "long",
-  });
-}
-
-export function DayCalendar({ todayEntries, isSlotOccupied, onDrop, onRemove, onToggle, onResize, onMove, onReturnToList, selectedTask, onTapEmptySlot, onTapOccupiedSlot }: Props) {
+export function DayCalendar({ selectedDate, entries, isSlotOccupied, onDrop, onRemove, onToggle, onResize, onMove, onReturnToList, selectedTask, onTapEmptySlot, onTapOccupiedSlot }: Props) {
   const [currentHour, setCurrentHour] = useState(new Date().getHours());
   const [dragOverHour, setDragOverHour] = useState<number | null>(null);
-  const todayLabel = useMemo(() => formatToday(), []);
+  const dateLabel = useMemo(() => formatFullDate(selectedDate), [selectedDate]);
   const entryRefs = useRef<Map<string, HTMLDivElement>>(new Map());
 
   const isSlotFree = useCallback((hour: number, excludeTaskId: string) => {
-    return !todayEntries.some((e) =>
+    return !entries.some((e) =>
       e.taskId !== excludeTaskId && hour >= e.hour && hour < e.hour + (e.duration ?? 1)
     );
-  }, [todayEntries]);
+  }, [entries]);
 
   const { handleResizePointerDown } = usePointerResize(onResize, isSlotFree);
   const { handleMovePointerDown } = usePointerMove(onMove, isSlotFree);
@@ -81,7 +75,7 @@ export function DayCalendar({ todayEntries, isSlotOccupied, onDrop, onRemove, on
     if (!isSlotOccupied(hour) && selectedTask && onTapEmptySlot) {
       onTapEmptySlot(hour);
     } else if (isSlotOccupied(hour) && onTapOccupiedSlot) {
-      const entry = todayEntries.find((e) => hour >= e.hour && hour < e.hour + (e.duration ?? 1));
+      const entry = entries.find((e) => hour >= e.hour && hour < e.hour + (e.duration ?? 1));
       if (entry) {
         onTapOccupiedSlot(entry.taskId, entry.taskText, entry.date, entry.hour);
       }
@@ -100,7 +94,7 @@ export function DayCalendar({ todayEntries, isSlotOccupied, onDrop, onRemove, on
     <div className={styles.calendar}>
       <div className={styles.header}>
         <span className={styles.headerTitle}>Расписание</span>
-        <span className={styles.headerDate}>{todayLabel}</span>
+        <span className={styles.headerDate}>{dateLabel}</span>
       </div>
       <div className={styles.calendarBody}>
         {/* Background slots */}
@@ -135,7 +129,7 @@ export function DayCalendar({ todayEntries, isSlotOccupied, onDrop, onRemove, on
         })}
 
         {/* Entries overlay */}
-        {todayEntries.map((entry) => {
+        {entries.map((entry) => {
           const dur = entry.duration ?? 1;
           const key = `${entry.taskId}-${entry.hour}`;
           return (
