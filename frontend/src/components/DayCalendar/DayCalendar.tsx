@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef, useCallback, type DragEvent } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback, type DragEvent, type FormEvent } from "react";
 import type { CalendarEntry } from "../../types/task";
 import { usePointerResize } from "../../hooks/usePointerResize";
 import { usePointerMove } from "../../hooks/usePointerMove";
@@ -31,6 +31,9 @@ interface Props {
   selectedTask?: { id: string; text: string; tag?: string; tagColor?: string } | null;
   onTapEmptySlot?: (startMinute: number) => void;
   onTapOccupiedSlot?: (taskId: string, taskText: string, date: string, startMinute: number) => void;
+  onAddCalendarSubtask?: (taskId: string, date: string, startMinute: number, text: string) => void;
+  onToggleCalendarSubtask?: (taskId: string, date: string, startMinute: number, subtaskId: string) => void;
+  onDeleteCalendarSubtask?: (taskId: string, date: string, startMinute: number, subtaskId: string) => void;
 }
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
@@ -57,12 +60,17 @@ export function DayCalendar({
   selectedTask,
   onTapEmptySlot,
   onTapOccupiedSlot,
+  onAddCalendarSubtask,
+  onToggleCalendarSubtask,
+  onDeleteCalendarSubtask,
 }: Props) {
   const [currentMinute, setCurrentMinute] = useState(() => {
     const now = new Date();
     return now.getHours() * 60 + now.getMinutes();
   });
   const [dragOverHour, setDragOverHour] = useState<number | null>(null);
+  const [expandedEntry, setExpandedEntry] = useState<string | null>(null);
+  const [entrySubtaskInput, setEntrySubtaskInput] = useState('');
   const dateLabel = useMemo(() => formatFullDate(selectedDate), [selectedDate]);
   const entryRefs = useRef<Map<string, HTMLDivElement>>(new Map());
 
@@ -213,14 +221,6 @@ export function DayCalendar({
                   const dur = entry.duration;
                   const key = `${entry.taskId}-${entry.startMinute}`;
                   const accentColor = entry.tagColor ?? "#34c759";
-                  const entryStyle: React.CSSProperties = {
-                    top: `${top}px`,
-                    height: `${height}px`,
-                    background: entry.done
-                      ? hexToRgba(accentColor, 0.05)
-                      : `linear-gradient(135deg, ${hexToRgba(accentColor, 0.1)}, ${hexToRgba(accentColor, 0.06)})`,
-                    borderColor: hexToRgba(accentColor, entry.done ? 0.1 : 0.15),
-                  };
                   function handleEntryDragStart(e: DragEvent<HTMLDivElement>) {
                     e.dataTransfer.setData("taskId", entry.taskId);
                     e.dataTransfer.setData("taskText", entry.taskText);
@@ -231,6 +231,20 @@ export function DayCalendar({
                     if (entry.tagColor) e.dataTransfer.setData("taskTagColor", entry.tagColor);
                     e.dataTransfer.effectAllowed = "move";
                   }
+
+                  const isExpanded = expandedEntry === key;
+                  const entryProgress = entry.subtasks && entry.subtasks.length > 0
+                    ? entry.subtasks.filter(s => s.done).length / entry.subtasks.length
+                    : 0;
+                  const expandedEntryStyle: React.CSSProperties = {
+                    top: `${top}px`,
+                    minHeight: `${height}px`,
+                    height: isExpanded ? 'auto' : `${height}px`,
+                    background: entry.done
+                      ? hexToRgba(accentColor, 0.05)
+                      : `linear-gradient(135deg, ${hexToRgba(accentColor, 0.1)}, ${hexToRgba(accentColor, 0.06)})`,
+                    borderColor: hexToRgba(accentColor, entry.done ? 0.1 : 0.15),
+                  };
 
                   return (
                     <div
@@ -243,7 +257,7 @@ export function DayCalendar({
                       ]
                         .filter(Boolean)
                         .join(" ")}
-                      style={entryStyle}
+                      style={expandedEntryStyle}
                       title={entry.taskText}
                       draggable
                       onDragStart={handleEntryDragStart}
@@ -310,6 +324,15 @@ export function DayCalendar({
                             {entry.tag}
                           </span>
                         )}
+                        <button
+                          className={`${styles.entryExpandBtn} ${isExpanded ? styles.entryExpandBtnOpen : ''}`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setExpandedEntry(prev => prev === key ? null : key);
+                            setEntrySubtaskInput('');
+                          }}
+                          aria-label="Подзадачи"
+                        >›</button>
                         {onReturnToList && (
                           <button
                             className={styles.returnBtn}
@@ -336,6 +359,49 @@ export function DayCalendar({
                           &times;
                         </button>
                       </div>
+                      {entry.subtasks && entry.subtasks.length > 0 && (
+                        <div className={styles.entryProgressBar}>
+                          <div
+                            className={styles.entryProgressFill}
+                            style={{
+                              width: `${entryProgress * 100}%`,
+                              background: hexToRgba(accentColor, 0.45)
+                            }}
+                          />
+                        </div>
+                      )}
+                      {isExpanded && (
+                        <div className={styles.entrySubtaskPanel}>
+                          {entry.subtasks?.map(s => (
+                            <div key={s.id} className={styles.entrySubtaskRow}>
+                              <div
+                                className={`${styles.entrySubtaskCheck} ${s.done ? styles.entrySubtaskChecked : ''}`}
+                                style={s.done ? { background: accentColor, borderColor: accentColor } : { borderColor: hexToRgba(accentColor, 0.4) }}
+                                onClick={e => { e.stopPropagation(); onToggleCalendarSubtask?.(entry.taskId, entry.date, entry.startMinute, s.id); }}
+                              />
+                              <span className={`${styles.entrySubtaskText} ${s.done ? styles.entrySubtaskDone : ''}`}>{s.text}</span>
+                              <button className={styles.entrySubtaskDelete} onClick={e => { e.stopPropagation(); onDeleteCalendarSubtask?.(entry.taskId, entry.date, entry.startMinute, s.id); }}>×</button>
+                            </div>
+                          ))}
+                          {(!entry.subtasks || entry.subtasks.length < 3) && (
+                            <form className={styles.entrySubtaskForm} onSubmit={(e: FormEvent) => {
+                              e.preventDefault();
+                              const val = entrySubtaskInput.trim();
+                              if (val) { onAddCalendarSubtask?.(entry.taskId, entry.date, entry.startMinute, val); setEntrySubtaskInput(''); }
+                            }}>
+                              <input
+                                className={styles.entrySubtaskInput}
+                                value={entrySubtaskInput}
+                                onChange={e => setEntrySubtaskInput(e.target.value)}
+                                placeholder="Подзадача..."
+                                maxLength={40}
+                                onClick={e => e.stopPropagation()}
+                              />
+                              <button type="submit" className={styles.entrySubtaskAddBtn} disabled={!entrySubtaskInput.trim()}>+</button>
+                            </form>
+                          )}
+                        </div>
+                      )}
                       <div
                         className={styles.resizeHandle}
                         data-resize-handle

@@ -1,3 +1,9 @@
+export interface Subtask {
+  id: string;
+  text: string;
+  done: boolean;
+}
+
 export interface Task {
   id: string;
   text: string;
@@ -5,6 +11,7 @@ export interface Task {
   date: string;
   tag?: string;
   tagColor?: string;
+  subtasks?: Subtask[];
 }
 
 export interface CalendarEntry {
@@ -16,6 +23,7 @@ export interface CalendarEntry {
   done: boolean;
   tag?: string;
   tagColor?: string;
+  subtasks?: Subtask[];
 }
 
 export interface Tag {

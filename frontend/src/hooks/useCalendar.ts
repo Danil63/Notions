@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo, useEffect, useRef } from "react";
-import type { CalendarEntry } from "../types/task";
+import type { CalendarEntry, Subtask } from "../types/task";
 import { apiGet, apiPatch, debounce } from "./useApi";
 import { addDays, getTodayKey, getWeekDays } from "../utils/dateUtils";
 
@@ -98,7 +98,8 @@ export function useCalendar(selectedDate: string) {
       startMinute: number,
       duration = 60,
       tag?: string,
-      tagColor?: string
+      tagColor?: string,
+      subtasks?: Subtask[]
     ) => {
       setEntries((prev) => {
         // Проверяем, не занят ли диапазон другой записью
@@ -119,6 +120,7 @@ export function useCalendar(selectedDate: string) {
         };
         if (tag !== undefined) entry.tag = tag;
         if (tagColor !== undefined) entry.tagColor = tagColor;
+        if (subtasks !== undefined) entry.subtasks = subtasks;
         const next = [...prev, entry];
         saveEntries(next);
         return next;
@@ -223,6 +225,55 @@ export function useCalendar(selectedDate: string) {
     []
   );
 
+  const addCalendarSubtask = useCallback(
+    (taskId: string, date: string, startMinute: number, text: string): void => {
+      setEntries((prev) => {
+        const next = prev.map((e) => {
+          if (!(e.taskId === taskId && e.date === date && e.startMinute === startMinute)) return e;
+          const current = e.subtasks ?? [];
+          if (current.length >= 3) return e;
+          const newSubtask: Subtask = { id: crypto.randomUUID(), text, done: false };
+          return { ...e, subtasks: [...current, newSubtask] };
+        });
+        saveEntries(next);
+        return next;
+      });
+    },
+    []
+  );
+
+  const toggleCalendarSubtask = useCallback(
+    (taskId: string, date: string, startMinute: number, subtaskId: string): void => {
+      setEntries((prev) => {
+        const next = prev.map((e) => {
+          if (!(e.taskId === taskId && e.date === date && e.startMinute === startMinute)) return e;
+          const subtasks = (e.subtasks ?? []).map((s) =>
+            s.id === subtaskId ? { ...s, done: !s.done } : s
+          );
+          return { ...e, subtasks };
+        });
+        saveEntries(next);
+        return next;
+      });
+    },
+    []
+  );
+
+  const deleteCalendarSubtask = useCallback(
+    (taskId: string, date: string, startMinute: number, subtaskId: string): void => {
+      setEntries((prev) => {
+        const next = prev.map((e) => {
+          if (!(e.taskId === taskId && e.date === date && e.startMinute === startMinute)) return e;
+          const subtasks = (e.subtasks ?? []).filter((s) => s.id !== subtaskId);
+          return { ...e, subtasks };
+        });
+        saveEntries(next);
+        return next;
+      });
+    },
+    []
+  );
+
   const dateEntries = useMemo(
     () => entries.filter((e) => e.date === selectedDate),
     [entries, selectedDate]
@@ -264,6 +315,9 @@ export function useCalendar(selectedDate: string) {
     moveEntry,
     resizeEntry,
     toggleEntry,
+    addCalendarSubtask,
+    toggleCalendarSubtask,
+    deleteCalendarSubtask,
     isSlotOccupied,
     getEntryAt,
     getEntriesForDate,

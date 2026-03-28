@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, type DragEvent } from "react";
-import type { Tag } from "../../types/task";
+import type { Tag, Subtask } from "../../types/task";
 import { hexToRgba } from "../../utils/colors";
 import styles from "./TaskList.module.css";
 
@@ -10,10 +10,14 @@ interface Props {
   tag?: string;
   tagColor?: string;
   tags: Tag[];
+  subtasks?: Subtask[];
   onToggle: () => void;
   onDelete: () => void;
   onUpdateTag: (tag: string, tagColor: string) => void;
   onRemoveTag: () => void;
+  onAddSubtask: (text: string) => void;
+  onToggleSubtask: (subtaskId: string) => void;
+  onDeleteSubtask: (subtaskId: string) => void;
   onSelect?: () => void;
   isSelected?: boolean;
 }
@@ -25,15 +29,25 @@ export function TaskItem({
   tag,
   tagColor,
   tags,
+  subtasks,
   onToggle,
   onDelete,
   onUpdateTag,
   onRemoveTag,
+  onAddSubtask,
+  onToggleSubtask,
+  onDeleteSubtask,
   onSelect,
   isSelected,
 }: Props) {
   const [showPicker, setShowPicker] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+  const [newSubtask, setNewSubtask] = useState('');
   const pickerRef = useRef<HTMLDivElement>(null);
+
+  const progress = subtasks && subtasks.length > 0
+    ? subtasks.filter(s => s.done).length / subtasks.length
+    : 0;
 
   useEffect(() => {
     if (!showPicker) return;
@@ -70,88 +84,145 @@ export function TaskItem({
     setShowPicker(false);
   }
 
+  function handleAddSubtask(e: React.FormEvent): void {
+    e.preventDefault();
+    const t = newSubtask.trim();
+    if (!t) return;
+    onAddSubtask(t);
+    setNewSubtask('');
+  }
+
   const cardStyle = tagColor ? { background: hexToRgba(tagColor, 0.1) } : undefined;
 
   return (
-    <div
-      className={`${styles.item} ${done ? styles.done : ""} ${isSelected ? styles.selected : ""}`}
-      style={cardStyle}
-      draggable
-      onDragStart={handleDragStart}
-      onClick={onSelect}
-    >
-      <div className={styles.itemTop}>
-        <div
-          className={`${styles.checkbox} ${done ? styles.checked : ""}`}
-          role="checkbox"
-          aria-checked={done}
-          aria-label={text}
-          tabIndex={0}
-          onClick={(e) => {
-            e.stopPropagation();
-            onToggle();
-          }}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" || e.key === " ") {
-              e.preventDefault();
+    <div className={styles.itemWrapper}>
+      <div
+        className={`${styles.item} ${done ? styles.done : ""} ${isSelected ? styles.selected : ""}`}
+        style={cardStyle}
+        draggable
+        onDragStart={handleDragStart}
+        onClick={onSelect}
+      >
+        <div className={styles.itemTop}>
+          <div
+            className={`${styles.checkbox} ${done ? styles.checked : ""}`}
+            role="checkbox"
+            aria-checked={done}
+            aria-label={text}
+            tabIndex={0}
+            onClick={(e) => {
+              e.stopPropagation();
               onToggle();
-            }
-          }}
-        />
-        <div className={styles.text}>{text}</div>
-        <button
-          className={styles.deleteBtn}
-          onClick={(e) => {
-            e.stopPropagation();
-            onDelete();
-          }}
-          title="Удалить"
-        >
-          &times;
-        </button>
-      </div>
-
-      <div className={styles.tagArea} ref={pickerRef}>
-        {tag ? (
-          <span
-            className={styles.tagBadge}
-            style={{ background: tagColor }}
-            onClick={handleTagBtnClick}
-            title="Сменить тег"
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                onToggle();
+              }
+            }}
+          />
+          <div className={styles.text}>{text}</div>
+          <button
+            className={`${styles.expandBtn} ${expanded ? styles.expandBtnOpen : ''}`}
+            onClick={(e) => { e.stopPropagation(); setExpanded(v => !v); }}
+            aria-label="Подзадачи"
+          >›</button>
+          <button
+            className={styles.deleteBtn}
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete();
+            }}
+            title="Удалить"
           >
-            {tag}
-          </span>
-        ) : (
-          <button className={styles.tagAddBtn} onClick={handleTagBtnClick}>
-            + тег
+            &times;
           </button>
-        )}
+        </div>
 
-        {showPicker && (
-          <div className={styles.tagPicker} onClick={(e) => e.stopPropagation()}>
-            {tags.length === 0 && (
-              <div className={styles.tagPickerEmpty}>
-                Нет тегов. Создай в «Управление тегами»
-              </div>
-            )}
-            {tags.map((t) => (
-              <div
-                key={t.id}
-                className={`${styles.tagPickerItem} ${t.name === tag ? styles.tagPickerItemActive : ""}`}
-                onClick={() => handlePickTag(t)}
-              >
-                <span className={styles.tagPickerDot} style={{ background: t.color }} />
-                {t.name}
-              </div>
-            ))}
-            {tag && (
-              <div className={styles.tagPickerRemove} onClick={handleRemoveTag}>
-                ✕ Убрать тег
-              </div>
-            )}
+        {subtasks && subtasks.length > 0 && (
+          <div className={styles.progressBar}>
+            <div
+              className={styles.progressFill}
+              style={{
+                width: `${progress * 100}%`,
+                background: tagColor ? hexToRgba(tagColor, 0.45) : 'rgba(52,199,89,0.45)'
+              }}
+            />
           </div>
         )}
+
+        <div className={styles.tagArea} ref={pickerRef}>
+          {tag ? (
+            <span
+              className={styles.tagBadge}
+              style={{ background: tagColor }}
+              onClick={handleTagBtnClick}
+              title="Сменить тег"
+            >
+              {tag}
+            </span>
+          ) : (
+            <button className={styles.tagAddBtn} onClick={handleTagBtnClick}>
+              + тег
+            </button>
+          )}
+
+          {showPicker && (
+            <div className={styles.tagPicker} onClick={(e) => e.stopPropagation()}>
+              {tags.length === 0 && (
+                <div className={styles.tagPickerEmpty}>
+                  Нет тегов. Создай в «Управление тегами»
+                </div>
+              )}
+              {tags.map((t) => (
+                <div
+                  key={t.id}
+                  className={`${styles.tagPickerItem} ${t.name === tag ? styles.tagPickerItemActive : ""}`}
+                  onClick={() => handlePickTag(t)}
+                >
+                  <span className={styles.tagPickerDot} style={{ background: t.color }} />
+                  {t.name}
+                </div>
+              ))}
+              {tag && (
+                <div className={styles.tagPickerRemove} onClick={handleRemoveTag}>
+                  ✕ Убрать тег
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </div>
+
+      {expanded && (
+        <div className={styles.subtaskPanel}>
+          {subtasks?.map(s => (
+            <div key={s.id} className={styles.subtaskRow}>
+              <div
+                className={`${styles.subtaskCheck} ${s.done ? styles.subtaskChecked : ''}`}
+                onClick={() => onToggleSubtask(s.id)}
+              />
+              <span className={`${styles.subtaskText} ${s.done ? styles.subtaskDone : ''}`}>
+                {s.text}
+              </span>
+              <button className={styles.subtaskDelete} onClick={() => onDeleteSubtask(s.id)}>×</button>
+            </div>
+          ))}
+          {(!subtasks || subtasks.length < 3) && (
+            <form className={styles.subtaskForm} onSubmit={handleAddSubtask}>
+              <input
+                className={styles.subtaskInput}
+                value={newSubtask}
+                onChange={e => setNewSubtask(e.target.value)}
+                placeholder="Подзадача..."
+                maxLength={40}
+                onKeyDown={e => { if (e.key === 'Escape') setExpanded(false); }}
+              />
+              <button type="submit" className={styles.subtaskAddBtn} disabled={!newSubtask.trim()}>+</button>
+            </form>
+          )}
+        </div>
+      )}
     </div>
   );
 }

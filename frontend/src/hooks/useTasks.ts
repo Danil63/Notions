@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo, useEffect, useRef } from "react";
-import type { Task } from "../types/task";
+import type { Task, Subtask } from "../types/task";
 import { apiGet, apiPatch, debounce } from "./useApi";
 import { getTodayKey, addDays } from "../utils/dateUtils";
 
@@ -120,7 +120,48 @@ export function useTasks(selectedDate: string) {
       const next = prev.map((t) => {
         if (t.id !== id) return t;
         const updated: Task = { id: t.id, text: t.text, done: t.done, date: t.date };
+        if (t.subtasks) updated.subtasks = t.subtasks;
         return updated;
+      });
+      saveAll(next);
+      return next;
+    });
+  }, []);
+
+  const addSubtask = useCallback((taskId: string, text: string): void => {
+    setAllTasks((prev) => {
+      const next = prev.map((t) => {
+        if (t.id !== taskId) return t;
+        const current = t.subtasks ?? [];
+        if (current.length >= 3) return t;
+        const newSubtask: Subtask = { id: crypto.randomUUID(), text, done: false };
+        return { ...t, subtasks: [...current, newSubtask] };
+      });
+      saveAll(next);
+      return next;
+    });
+  }, []);
+
+  const toggleSubtask = useCallback((taskId: string, subtaskId: string): void => {
+    setAllTasks((prev) => {
+      const next = prev.map((t) => {
+        if (t.id !== taskId) return t;
+        const subtasks = (t.subtasks ?? []).map((s) =>
+          s.id === subtaskId ? { ...s, done: !s.done } : s
+        );
+        return { ...t, subtasks };
+      });
+      saveAll(next);
+      return next;
+    });
+  }, []);
+
+  const deleteSubtask = useCallback((taskId: string, subtaskId: string): void => {
+    setAllTasks((prev) => {
+      const next = prev.map((t) => {
+        if (t.id !== taskId) return t;
+        const subtasks = (t.subtasks ?? []).filter((s) => s.id !== subtaskId);
+        return { ...t, subtasks };
       });
       saveAll(next);
       return next;
@@ -135,5 +176,5 @@ export function useTasks(selectedDate: string) {
   const canAdd = tasks.length < MAX_TASKS;
   const doneCount = useMemo(() => tasks.filter((t) => t.done).length, [tasks]);
 
-  return { tasks, allTasks, addTask, toggleTask, deleteTask, updateTaskTag, removeTaskTag, canAdd, doneCount };
+  return { tasks, allTasks, addTask, toggleTask, deleteTask, updateTaskTag, removeTaskTag, addSubtask, toggleSubtask, deleteSubtask, canAdd, doneCount };
 }

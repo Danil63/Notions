@@ -16,6 +16,9 @@ interface Props {
   onReturnFromCalendar?: (taskId: string, taskText: string, date: string, startMinute: number) => void;
   selectedTaskId?: string | null;
   onSelectTask?: (id: string, text: string) => void;
+  onAddSubtask: (taskId: string, text: string) => void;
+  onToggleSubtask: (taskId: string, subtaskId: string) => void;
+  onDeleteSubtask: (taskId: string, subtaskId: string) => void;
 }
 
 export function TaskList({
@@ -30,6 +33,9 @@ export function TaskList({
   onReturnFromCalendar,
   selectedTaskId,
   onSelectTask,
+  onAddSubtask,
+  onToggleSubtask,
+  onDeleteSubtask,
 }: Props) {
   const [dragOver, setDragOver] = useState(false);
 
@@ -76,10 +82,14 @@ export function TaskList({
           tag={task.tag}
           tagColor={task.tagColor}
           tags={tags}
+          subtasks={task.subtasks}
           onToggle={() => onToggle(task.id)}
           onDelete={() => onDelete(task.id)}
           onUpdateTag={(tag, tagColor) => onUpdateTag(task.id, tag, tagColor)}
           onRemoveTag={() => onRemoveTag(task.id)}
+          onAddSubtask={(text) => onAddSubtask(task.id, text)}
+          onToggleSubtask={(subtaskId) => onToggleSubtask(task.id, subtaskId)}
+          onDeleteSubtask={(subtaskId) => onDeleteSubtask(task.id, subtaskId)}
           onSelect={onSelectTask ? () => onSelectTask(task.id, task.text) : undefined}
           isSelected={selectedTaskId === task.id}
         />

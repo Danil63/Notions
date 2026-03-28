@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from "react";
+import type { Subtask } from "./types/task";
 import { ProgressBar } from "./components/ProgressBar";
 import { InfoCard } from "./components/InfoCard";
 import { TaskList } from "./components/TaskList";
@@ -37,7 +38,7 @@ export default function App() {
     goToToday,
   } = useSelectedDate();
 
-  const { tasks, allTasks, addTask, toggleTask, deleteTask, updateTaskTag, removeTaskTag, canAdd, doneCount } =
+  const { tasks, allTasks, addTask, toggleTask, deleteTask, updateTaskTag, removeTaskTag, addSubtask, toggleSubtask, deleteSubtask, canAdd, doneCount } =
     useTasks(selectedDate);
 
   const { tags, addTag, deleteTag } = useTags();
@@ -51,6 +52,9 @@ export default function App() {
     moveEntry,
     resizeEntry,
     toggleEntry,
+    addCalendarSubtask,
+    toggleCalendarSubtask,
+    deleteCalendarSubtask,
     isSlotOccupied,
     dateEntries,
     dateTotal,
@@ -61,7 +65,7 @@ export default function App() {
   const weekProgress = useWeekDayProgress(selectedDate, entries, allTasks);
   const skills = useSkillBlocks(allTasks, entries);
 
-  const [selectedTask, setSelectedTask] = useState<{ id: string; text: string; tag?: string; tagColor?: string } | null>(null);
+  const [selectedTask, setSelectedTask] = useState<{ id: string; text: string; tag?: string; tagColor?: string; subtasks?: Subtask[] } | null>(null);
   const [isMobile, setIsMobile] = useState(() => window.matchMedia(MOBILE_MQ).matches);
 
   useEffect(() => {
@@ -93,11 +97,12 @@ export default function App() {
       if (fromCalendar && fromDate !== undefined && fromStartMinute !== undefined) {
         moveEntry(taskId, fromDate, fromStartMinute, startMinute);
       } else {
-        addEntry(taskId, taskText, startMinute, 60, tag, tagColor);
+        const sourceTask = allTasks.find((t) => t.id === taskId);
+        addEntry(taskId, taskText, startMinute, 60, tag, tagColor, sourceTask?.subtasks);
         deleteTask(taskId);
       }
     },
-    [addEntry, deleteTask, moveEntry]
+    [addEntry, deleteTask, moveEntry, allTasks]
   );
 
   const handleReturnToList = useCallback(
@@ -110,7 +115,7 @@ export default function App() {
 
   const handleSelectTask = useCallback((id: string, text: string) => {
     const found = tasks.find((t) => t.id === id);
-    setSelectedTask((prev) => (prev?.id === id ? null : { id, text, tag: found?.tag, tagColor: found?.tagColor }));
+    setSelectedTask((prev) => (prev?.id === id ? null : { id, text, tag: found?.tag, tagColor: found?.tagColor, subtasks: found?.subtasks }));
   }, [tasks]);
 
   const handleDeleteWithClear = useCallback(
@@ -124,7 +129,7 @@ export default function App() {
   const handleTapEmptySlot = useCallback(
     (startMinute: number) => {
       if (!selectedTask) return;
-      addEntry(selectedTask.id, selectedTask.text, startMinute, 60, selectedTask.tag, selectedTask.tagColor);
+      addEntry(selectedTask.id, selectedTask.text, startMinute, 60, selectedTask.tag, selectedTask.tagColor, selectedTask.subtasks);
       deleteTask(selectedTask.id);
       setSelectedTask(null);
     },
@@ -211,6 +216,9 @@ export default function App() {
             onReturnFromCalendar={handleReturnToList}
             selectedTaskId={isMobile ? (selectedTask?.id ?? null) : undefined}
             onSelectTask={isMobile ? handleSelectTask : undefined}
+            onAddSubtask={addSubtask}
+            onToggleSubtask={toggleSubtask}
+            onDeleteSubtask={deleteSubtask}
           />
         </div>
         <div className={styles.rightColumn}>
@@ -227,6 +235,9 @@ export default function App() {
             selectedTask={isMobile ? selectedTask : undefined}
             onTapEmptySlot={isMobile ? handleTapEmptySlot : undefined}
             onTapOccupiedSlot={isMobile ? handleTapOccupiedSlot : undefined}
+            onAddCalendarSubtask={addCalendarSubtask}
+            onToggleCalendarSubtask={toggleCalendarSubtask}
+            onDeleteCalendarSubtask={deleteCalendarSubtask}
           />
         </div>
       </div>
