@@ -323,9 +323,7 @@ export function DayCalendar({
                               );
                             }}
                             title="Вернуть в список"
-                          >
-                            &#x21A9;
-                          </button>
+                          />
                         )}
                         <button
                           className={styles.removeBtn}
