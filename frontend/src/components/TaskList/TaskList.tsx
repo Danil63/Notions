@@ -13,7 +13,7 @@ interface Props {
   onAdd: (text: string) => void;
   onUpdateTag: (id: string, tag: string, tagColor: string) => void;
   onRemoveTag: (id: string) => void;
-  onReturnFromCalendar?: (taskId: string, taskText: string, date: string, hour: number) => void;
+  onReturnFromCalendar?: (taskId: string, taskText: string, date: string, startMinute: number) => void;
   selectedTaskId?: string | null;
   onSelectTask?: (id: string, text: string) => void;
 }
@@ -52,9 +52,9 @@ export function TaskList({
     const taskId = e.dataTransfer.getData("taskId");
     const taskText = e.dataTransfer.getData("taskText");
     const date = e.dataTransfer.getData("calendarDate");
-    const hour = Number(e.dataTransfer.getData("calendarHour"));
+    const startMinute = Number(e.dataTransfer.getData("calendarStartMinute"));
     if (taskId && taskText) {
-      onReturnFromCalendar(taskId, taskText, date, hour);
+      onReturnFromCalendar(taskId, taskText, date, startMinute);
     }
   }
 

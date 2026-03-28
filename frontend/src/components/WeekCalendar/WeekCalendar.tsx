@@ -9,6 +9,9 @@ import {
 } from "../../utils/dateUtils";
 import styles from "./WeekCalendar.module.css";
 
+const HOUR_HEIGHT = 66; // px на 1 час
+const PX_PER_MINUTE = HOUR_HEIGHT / 60;
+
 interface Props {
   selectedDate: string;
   today: string;
@@ -21,7 +24,7 @@ interface Props {
     taskId: string,
     taskText: string,
     fromDate: string,
-    fromHour: number,
+    fromStartMinute: number,
     targetDateKey: string
   ) => void;
 }
@@ -57,8 +60,8 @@ export function WeekCalendar({
     if (!scrollRef.current) return;
     const now = new Date();
     const hour = now.getHours();
-    // каждая строка 44px, показываем 2 часа до текущего
-    const scrollTarget = Math.max(0, (hour - 2) * 44);
+    // каждая строка 66px, показываем 2 часа до текущего
+    const scrollTarget = Math.max(0, (hour - 2) * HOUR_HEIGHT);
     scrollRef.current.scrollTop = scrollTarget;
   }, []);
 
@@ -72,7 +75,6 @@ export function WeekCalendar({
   }, []);
 
   const currentHour = Math.floor(currentMinute / 60);
-  const currentMinuteInHour = currentMinute % 60;
   const todayInWeek = weekDays.includes(today);
 
   const handleDayHeaderDragOver = useCallback(
@@ -96,13 +98,16 @@ export function WeekCalendar({
       const taskText = e.dataTransfer.getData("taskText");
       const fromCalendar = e.dataTransfer.getData("fromCalendar") === "true";
       const fromDate = e.dataTransfer.getData("calendarDate");
-      const fromHour = Number(e.dataTransfer.getData("calendarHour"));
+      const fromStartMinute = Number(e.dataTransfer.getData("calendarStartMinute"));
       if (taskId && taskText && fromCalendar) {
-        onEntryDragToDay(taskId, taskText, fromDate, fromHour, targetDateKey);
+        onEntryDragToDay(taskId, taskText, fromDate, fromStartMinute, targetDateKey);
       }
     },
     [onEntryDragToDay]
   );
+
+  // Линия текущего времени — px от верха body
+  const currentLineTop = currentMinute * PX_PER_MINUTE;
 
   return (
     <div className={styles.weekCalendar}>
@@ -117,10 +122,7 @@ export function WeekCalendar({
           >
             ‹
           </button>
-          <button
-            className={styles.todayBtn}
-            onClick={onToday}
-          >
+          <button className={styles.todayBtn} onClick={onToday}>
             Сегодня
           </button>
           <button
@@ -174,11 +176,21 @@ export function WeekCalendar({
 
       {/* Тело календаря — прокручиваемая область */}
       <div className={styles.calendarBody} ref={scrollRef}>
+        {/* Линия текущего времени */}
+        {todayInWeek && (
+          <div
+            className={styles.currentTimeLineGlobal}
+            style={{ top: `${currentLineTop}px` }}
+          >
+            <div className={styles.currentTimeDot} />
+          </div>
+        )}
+
         {HOURS.map((hour) => {
           const isCurrentHour = hour === currentHour && todayInWeek;
           return (
             <div key={hour} className={styles.hourRow}>
-              {/* Метка времени */}
+              {/* Метка времени с засечками */}
               <div
                 className={[
                   styles.timeLabel,
@@ -188,6 +200,15 @@ export function WeekCalendar({
                   .join(" ")}
               >
                 {formatHour(hour)}
+                <div className={styles.tickMarks}>
+                  {[10, 20, 30, 40, 50].map((min) => (
+                    <div
+                      key={min}
+                      className={min === 30 ? styles.tickHalf : styles.tick}
+                      style={{ top: `${(min / 60) * 100}%` }}
+                    />
+                  ))}
+                </div>
               </div>
 
               {/* Ячейки для каждого дня */}
@@ -195,11 +216,15 @@ export function WeekCalendar({
                 const isToday = dateKey === today;
                 const isCurrentCell = isCurrentHour && isToday;
                 const dayEntries = getEntriesForDate(dateKey);
-                // Находим запись, которая НАЧИНАЕТСЯ в этом часу
-                const startEntry = dayEntries.find((e) => e.hour === hour);
+                // Записи, начинающиеся в этом часу
+                const hourEntries = dayEntries.filter(
+                  (e) => Math.floor(e.startMinute / 60) === hour
+                );
                 // Проверяем, занята ли ячейка записью, начавшейся ранее
                 const coveredByPrev = dayEntries.some(
-                  (e) => e.hour < hour && hour < e.hour + (e.duration ?? 1)
+                  (e) =>
+                    e.startMinute < hour * 60 &&
+                    hour * 60 < e.startMinute + e.duration
                 );
 
                 return (
@@ -213,22 +238,11 @@ export function WeekCalendar({
                       .filter(Boolean)
                       .join(" ")}
                   >
-                    {/* Линия текущего времени — только в колонке сегодня */}
-                    {isCurrentCell && (
-                      <div
-                        className={styles.currentTimeLine}
-                        style={{
-                          top: `${(currentMinuteInHour / 60) * 100}%`,
-                        }}
-                      >
-                        <div className={styles.currentTimeDot} />
-                      </div>
-                    )}
-
-                    {/* Запись, начинающаяся в этом часу */}
-                    {startEntry && !coveredByPrev && (
-                      <WeekEntry entry={startEntry} />
-                    )}
+                    {/* Записи этого часа */}
+                    {!coveredByPrev &&
+                      hourEntries.map((entry) => (
+                        <WeekEntry key={`${entry.taskId}-${entry.startMinute}`} entry={entry} />
+                      ))}
                   </div>
                 );
               })}
@@ -245,32 +259,38 @@ interface WeekEntryProps {
 }
 
 function WeekEntry({ entry }: WeekEntryProps) {
-  const dur = entry.duration ?? 1;
+  const dur = entry.duration;
   const accentColor = entry.tagColor ?? "#34c759";
+
+  // Позиционирование внутри cell
+  const minuteInHour = entry.startMinute % 60;
+  const top = minuteInHour * PX_PER_MINUTE;
+  const height = Math.max(dur * PX_PER_MINUTE - 4, 14);
 
   function handleDragStart(e: DragEvent<HTMLDivElement>) {
     e.dataTransfer.setData("taskId", entry.taskId);
     e.dataTransfer.setData("taskText", entry.taskText);
     e.dataTransfer.setData("fromCalendar", "true");
     e.dataTransfer.setData("calendarDate", entry.date);
-    e.dataTransfer.setData("calendarHour", String(entry.hour));
+    e.dataTransfer.setData("calendarStartMinute", String(entry.startMinute));
     e.dataTransfer.effectAllowed = "move";
   }
 
-  const entryStyle = {
-    "--dur": dur,
+  const entryStyle: React.CSSProperties = {
+    top: `${top}px`,
+    height: `${height}px`,
     background: entry.done
       ? hexToRgba(accentColor, 0.05)
       : `linear-gradient(135deg, ${hexToRgba(accentColor, 0.1)}, ${hexToRgba(accentColor, 0.06)})`,
     borderColor: hexToRgba(accentColor, entry.done ? 0.1 : 0.15),
-  } as React.CSSProperties;
+  };
 
   return (
     <div
       className={[
         styles.entry,
         entry.done ? styles.entryDone : "",
-        dur > 1 ? styles.entryMulti : "",
+        dur > 60 ? styles.entryMulti : "",
       ]
         .filter(Boolean)
         .join(" ")}

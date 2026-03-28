@@ -53,77 +53,128 @@
   color: var(--color-text-secondary);
 }
 
-/* ===== Grid layout ===== */
+/* ===== Calendar body ===== */
 
 .calendarBody {
-  display: grid;
-  grid-template-columns: 52px 1fr;
-  grid-template-rows: repeat(24, 44px);
+  position: relative;
 }
 
-/* ===== Time column (left) ===== */
+/* Линия текущего времени */
+.currentTimeLine {
+  position: absolute;
+  left: 52px;
+  right: 0;
+  height: 1.5px;
+  background: #007aff;
+  z-index: 10;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+}
 
-.time {
+.currentTimeDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #007aff;
+  position: absolute;
+  left: -4px;
+  top: 50%;
+  transform: translateY(-50%);
+  flex-shrink: 0;
+}
+
+/* ===== Hour row ===== */
+
+.hourRow {
+  display: grid;
+  grid-template-columns: 52px 1fr;
+  height: 66px;
+}
+
+/* ===== Time label с засечками ===== */
+
+.timeLabel {
+  position: relative;
   grid-column: 1;
   font-size: 11px;
   font-weight: 500;
   color: var(--color-text-muted);
   text-align: right;
-  padding: 12px 10px 0 8px;
+  padding: 4px 10px 0 8px;
   user-select: none;
   font-variant-numeric: tabular-nums;
   line-height: 1;
 }
 
-.currentHourTime {
+.timeLabelCurrent {
   color: #007aff;
   font-weight: 600;
 }
 
-/* ===== Slot content (right, background) ===== */
+.tickMarks {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 100%;
+  pointer-events: none;
+}
 
-.slotContent {
+.tick {
+  position: absolute;
+  right: 4px;
+  width: 6px;
+  height: 1px;
+  background: rgba(0, 0, 0, 0.12);
+  transform: translateY(-50%);
+}
+
+.tickHalf {
+  position: absolute;
+  right: 4px;
+  width: 10px;
+  height: 1px;
+  background: rgba(0, 0, 0, 0.2);
+  transform: translateY(-50%);
+}
+
+/* ===== Cell (drop-зона) ===== */
+
+.cell {
   grid-column: 2;
   border-bottom: 1px solid rgba(0, 0, 0, 0.04);
   border-left: 1px solid rgba(0, 0, 0, 0.04);
   transition: background 0.2s ease;
   position: relative;
+  overflow: visible;
 }
 
-.slotContent:hover {
+.cell:hover {
   background: rgba(0, 0, 0, 0.02);
 }
 
-.currentHourSlot {
-  background: rgba(0, 122, 255, 0.06);
-}
-
-.currentHourSlot::before {
-  content: "";
-  position: absolute;
-  left: -52px;
-  top: 0;
-  bottom: 0;
-  width: 3px;
-  background: #007aff;
-  border-radius: 0 2px 2px 0;
-}
-
-.dragOver {
-  background: rgba(0, 122, 255, 0.08);
-  border: 2px dashed rgba(0, 122, 255, 0.35);
-  border-radius: 8px;
-}
-
-.tapReady {
+.cellCurrent {
   background: rgba(0, 122, 255, 0.04);
 }
 
-/* ===== Entry (overlays grid slots) ===== */
+.cellDragOver {
+  background: rgba(0, 122, 255, 0.08);
+  outline: 2px dashed rgba(0, 122, 255, 0.35);
+  outline-offset: -2px;
+  border-radius: 8px;
+}
+
+.cellTapReady {
+  background: rgba(0, 122, 255, 0.03);
+}
+
+/* ===== Entry (абсолютно внутри cell) ===== */
 
 .entry {
-  grid-column: 2;
-  grid-row: var(--row-start) / span var(--row-span);
+  position: absolute;
+  left: 0;
+  right: 8px;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -131,12 +182,11 @@
   background: linear-gradient(135deg, rgba(52, 199, 89, 0.1), rgba(48, 209, 88, 0.06));
   border-radius: 8px;
   border: 1px solid rgba(52, 199, 89, 0.15);
-  margin: 2px 8px 2px 0;
-  position: relative;
   z-index: 1;
   overflow: visible;
   cursor: grab;
   gap: 4px;
+  box-sizing: border-box;
 }
 
 .entryContent {

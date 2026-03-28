@@ -1,6 +1,7 @@
 import { useRef, useCallback, useEffect } from "react";
 
-const GRID_ROW_HEIGHT = 44;
+const HOUR_HEIGHT = 66;
+const PX_PER_MINUTE = HOUR_HEIGHT / 60;
 const MOVE_THRESHOLD = 4;
 const SCROLL_ZONE = 40;
 const SCROLL_SPEED = 6;
@@ -8,8 +9,8 @@ const SCROLL_SPEED = 6;
 interface MoveState {
   taskId: string;
   date: string;
-  startHour: number;
-  duration: number;
+  startMinute: number;  // в минутах
+  duration: number;     // в минутах
   startY: number;
   moved: boolean;
 }
@@ -25,8 +26,8 @@ function autoScroll(clientY: number, container: HTMLElement | null): void {
 }
 
 export function usePointerMove(
-  onMove: (taskId: string, fromDate: string, fromHour: number, toHour: number) => void,
-  isSlotFree: (hour: number, excludeTaskId: string) => boolean,
+  onMove: (taskId: string, fromDate: string, fromStartMinute: number, toStartMinute: number) => void,
+  isSlotFree: (startMinute: number, excludeTaskId: string) => boolean,
 ) {
   const stateRef = useRef<MoveState | null>(null);
   const previewElRef = useRef<HTMLElement | null>(null);
@@ -36,23 +37,22 @@ export function usePointerMove(
   useEffect(() => { onMoveRef.current = onMove; }, [onMove]);
   useEffect(() => { isSlotFreeRef.current = isSlotFree; }, [isSlotFree]);
 
-  const calcTargetHour = useCallback((clientY: number): number => {
+  const calcTargetMinute = useCallback((clientY: number): number => {
     const state = stateRef.current;
     if (!state) return 0;
 
     const deltaPx = clientY - state.startY;
-    const deltaSlots = Math.round(deltaPx / GRID_ROW_HEIGHT);
-    const raw = state.startHour + deltaSlots;
-    return Math.max(0, Math.min(24 - state.duration, raw));
+    // Снаппим к 10 минутам
+    const deltaMinutes = Math.round(deltaPx / PX_PER_MINUTE / 10) * 10;
+    const raw = state.startMinute + deltaMinutes;
+    return Math.max(0, Math.min(24 * 60 - state.duration, raw));
   }, []);
 
-  const canPlace = useCallback((targetHour: number): boolean => {
+  const canPlace = useCallback((targetMinute: number): boolean => {
     const state = stateRef.current;
     if (!state) return false;
-    for (let h = targetHour; h < targetHour + state.duration; h++) {
-      if (!isSlotFreeRef.current(h, state.taskId)) return false;
-    }
-    return true;
+    // Проверяем свободен ли первый минутный слот начала (грубая проверка)
+    return isSlotFreeRef.current(targetMinute, state.taskId);
   }, []);
 
   const handleMovePointerDown = useCallback((
@@ -66,11 +66,15 @@ export function usePointerMove(
       return;
     }
 
+    // hour и duration приходят в "часовых" единицах из DayCalendar
+    const startMinute = entry.hour * 60;
+    const durationMinutes = entry.duration * 60;
+
     stateRef.current = {
       taskId: entry.taskId,
       date: entry.date,
-      startHour: entry.hour,
-      duration: entry.duration,
+      startMinute,
+      duration: durationMinutes,
       startY: e.clientY,
       moved: false,
     };
@@ -96,9 +100,11 @@ export function usePointerMove(
       }
 
       autoScroll(ev.clientY, scrollContainerRef.current);
-      const targetHour = calcTargetHour(ev.clientY);
-      if (canPlace(targetHour) && previewElRef.current) {
-        previewElRef.current.style.setProperty("--row-start", String(targetHour + 1));
+      const targetMinute = calcTargetMinute(ev.clientY);
+      if (canPlace(targetMinute) && previewElRef.current) {
+        const minuteInHour = targetMinute % 60;
+        const topPx = minuteInHour * PX_PER_MINUTE;
+        previewElRef.current.style.top = `${topPx}px`;
       }
     };
 
@@ -106,11 +112,12 @@ export function usePointerMove(
       const state = stateRef.current;
 
       if (state && state.moved) {
-        const targetHour = calcTargetHour(ev.clientY);
-        if (targetHour !== state.startHour && canPlace(targetHour)) {
-          onMoveRef.current(state.taskId, state.date, state.startHour, targetHour);
+        const targetMinute = calcTargetMinute(ev.clientY);
+        if (targetMinute !== state.startMinute && canPlace(targetMinute)) {
+          onMoveRef.current(state.taskId, state.date, state.startMinute, targetMinute);
         } else if (previewElRef.current) {
-          previewElRef.current.style.setProperty("--row-start", String(state.startHour + 1));
+          const minuteInHour = state.startMinute % 60;
+          previewElRef.current.style.top = `${minuteInHour * PX_PER_MINUTE}px`;
         }
       }
 
@@ -134,7 +141,7 @@ export function usePointerMove(
 
     document.addEventListener("pointermove", onPointerMove);
     document.addEventListener("pointerup", onPointerUp);
-  }, [calcTargetHour, canPlace]);
+  }, [calcTargetMinute, canPlace]);
 
   return { handleMovePointerDown };
 }

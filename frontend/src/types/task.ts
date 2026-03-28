@@ -10,8 +10,8 @@ export interface Task {
 export interface CalendarEntry {
   taskId: string;
   taskText: string;
-  hour: number;
-  duration: number;
+  startMinute: number;  // минуты от начала дня 0..1430 (100 = 1:40)
+  duration: number;     // в минутах (60 = 1 час)
   date: string;
   done: boolean;
   tag?: string;

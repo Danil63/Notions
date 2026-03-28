@@ -1,15 +1,16 @@
 import { useRef, useCallback, useEffect } from "react";
 
-const GRID_ROW_HEIGHT = 44;
+const HOUR_HEIGHT = 66;
+const PX_PER_MINUTE = HOUR_HEIGHT / 60;
 const SCROLL_ZONE = 40;
 const SCROLL_SPEED = 6;
 
 interface ResizeState {
   taskId: string;
   date: string;
-  hour: number;
+  startMinute: number;
   startY: number;
-  startDuration: number;
+  startDuration: number; // в минутах
 }
 
 function autoScroll(clientY: number, container: HTMLElement | null): void {
@@ -23,8 +24,8 @@ function autoScroll(clientY: number, container: HTMLElement | null): void {
 }
 
 export function usePointerResize(
-  onResize: (taskId: string, date: string, hour: number, newDuration: number) => void,
-  isSlotFree: (hour: number, excludeTaskId: string) => boolean,
+  onResize: (taskId: string, date: string, startMinute: number, newDuration: number) => void,
+  isSlotFree: (startMinute: number, excludeTaskId: string) => boolean,
 ) {
   const stateRef = useRef<ResizeState | null>(null);
   const previewElRef = useRef<HTMLElement | null>(null);
@@ -36,23 +37,14 @@ export function usePointerResize(
 
   const calcDuration = useCallback((clientY: number): number => {
     const state = stateRef.current;
-    if (!state) return 1;
+    if (!state) return 60;
 
     const deltaPx = clientY - state.startY;
-    const deltaSlots = Math.round(deltaPx / GRID_ROW_HEIGHT);
-    const raw = state.startDuration + deltaSlots;
-    const clamped = Math.max(1, Math.min(24 - state.hour, raw));
-
-    let newDuration = clamped;
-    if (newDuration > state.startDuration) {
-      for (let h = state.hour + state.startDuration; h < state.hour + newDuration; h++) {
-        if (!isSlotFreeRef.current(h, state.taskId)) {
-          newDuration = h - state.hour;
-          break;
-        }
-      }
-    }
-    return Math.max(1, newDuration);
+    // Снаппим к 10 минутам
+    const deltaMinutes = Math.round(deltaPx / PX_PER_MINUTE / 10) * 10;
+    const raw = state.startDuration + deltaMinutes;
+    const clamped = Math.max(10, Math.min(24 * 60 - state.startMinute, raw));
+    return clamped;
   }, []);
 
   const handleResizePointerDown = useCallback((
@@ -63,12 +55,17 @@ export function usePointerResize(
     e.stopPropagation();
     e.preventDefault();
 
+    // hour и duration приходят в "часовых" единицах из DayCalendar (для совместимости)
+    // но мы конвертируем в минуты
+    const startMinute = entry.hour * 60;
+    const startDuration = entry.duration * 60;
+
     stateRef.current = {
       taskId: entry.taskId,
       date: entry.date,
-      hour: entry.hour,
+      startMinute,
       startY: e.clientY,
-      startDuration: entry.duration,
+      startDuration,
     };
     previewElRef.current = entryEl;
     scrollContainerRef.current = entryEl?.closest(`.${CSS.escape("calendar")}`) as HTMLElement | null
@@ -79,9 +76,10 @@ export function usePointerResize(
 
     const onMove = (ev: PointerEvent) => {
       autoScroll(ev.clientY, scrollContainerRef.current);
-      const dur = calcDuration(ev.clientY);
       if (previewElRef.current) {
-        previewElRef.current.style.setProperty("--row-span", String(dur));
+        const dur = calcDuration(ev.clientY);
+        const heightPx = dur * PX_PER_MINUTE - 4;
+        previewElRef.current.style.height = `${Math.max(heightPx, 20)}px`;
       }
     };
 
@@ -90,9 +88,9 @@ export function usePointerResize(
       if (state) {
         const newDuration = calcDuration(ev.clientY);
         if (newDuration !== state.startDuration) {
-          onResizeRef.current(state.taskId, state.date, state.hour, newDuration);
+          onResizeRef.current(state.taskId, state.date, state.startMinute, newDuration);
         } else if (previewElRef.current) {
-          previewElRef.current.style.setProperty("--row-span", String(state.startDuration));
+          previewElRef.current.style.height = `${Math.max(state.startDuration * PX_PER_MINUTE - 4, 20)}px`;
         }
       }
 

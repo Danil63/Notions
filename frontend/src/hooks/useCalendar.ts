@@ -10,19 +10,33 @@ interface CalendarPayload {
   entries: CalendarEntry[];
 }
 
-function normalizeDuration(entries: CalendarEntry[]): CalendarEntry[] {
-  return entries.map((e) => ({ ...e, duration: e.duration ?? 1 }));
+/** Мигрировать старые записи с полем hour → startMinute */
+function migrateEntries(entries: CalendarEntry[]): CalendarEntry[] {
+  return entries.map((e) => {
+    const legacy = e as CalendarEntry & { hour?: number };
+    if (legacy.hour !== undefined && e.startMinute === undefined) {
+      const startMinute = legacy.hour * 60;
+      // duration в старом формате — часы, в новом — минуты
+      const durationMinutes = (e.duration && e.duration <= 24) ? e.duration * 60 : (e.duration ?? 60);
+      const result: CalendarEntry = { ...e, startMinute, duration: durationMinutes };
+      delete (result as CalendarEntry & { hour?: number }).hour;
+      return result;
+    }
+    // Нормализация: если duration не задан — 60 минут
+    return { ...e, duration: e.duration ?? 60 };
+  });
 }
 
-function coversHour(entry: CalendarEntry, hour: number): boolean {
-  return hour >= entry.hour && hour < entry.hour + (entry.duration ?? 1);
+function coversMinute(entry: CalendarEntry, minute: number): boolean {
+  return minute >= entry.startMinute && minute < entry.startMinute + (entry.duration ?? 60);
 }
 
 function loadEntries(): CalendarEntry[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return [];
-    const entries: CalendarEntry[] = normalizeDuration(JSON.parse(raw));
+    const parsed: unknown[] = JSON.parse(raw);
+    const entries = migrateEntries(parsed as CalendarEntry[]);
     const cutoffKey = addDays(getTodayKey(), -MAX_AGE_DAYS);
     const fresh = entries.filter((e) => e.date >= cutoffKey);
     if (fresh.length !== entries.length) {
@@ -60,9 +74,9 @@ export function useCalendar(selectedDate: string) {
           delete (result as CalendarEntry & { tag_color?: string }).tag_color;
           return result;
         });
-        const normalized = normalizeDuration(mapped);
-        setEntries(normalized);
-        saveToLocalStorage(normalized);
+        const migrated = migrateEntries(mapped);
+        setEntries(migrated);
+        saveToLocalStorage(migrated);
       } else {
         const local = loadEntries();
         if (local.length > 0) {
@@ -72,19 +86,37 @@ export function useCalendar(selectedDate: string) {
     });
   }, []);
 
-  function saveEntries(entries: CalendarEntry[]): void {
-    saveToLocalStorage(entries);
-    debouncedSync(entries);
+  function saveEntries(updated: CalendarEntry[]): void {
+    saveToLocalStorage(updated);
+    debouncedSync(updated);
   }
 
   const addEntry = useCallback(
-    (taskId: string, taskText: string, hour: number, tag?: string, tagColor?: string) => {
+    (
+      taskId: string,
+      taskText: string,
+      startMinute: number,
+      duration = 60,
+      tag?: string,
+      tagColor?: string
+    ) => {
       setEntries((prev) => {
+        // Проверяем, не занят ли диапазон другой записью
         const occupied = prev.some(
-          (e) => e.date === selectedDate && coversHour(e, hour)
+          (e) =>
+            e.date === selectedDate &&
+            e.startMinute < startMinute + duration &&
+            e.startMinute + e.duration > startMinute
         );
         if (occupied) return prev;
-        const entry: CalendarEntry = { taskId, taskText, hour, duration: 1, date: selectedDate, done: false };
+        const entry: CalendarEntry = {
+          taskId,
+          taskText,
+          startMinute,
+          duration,
+          date: selectedDate,
+          done: false,
+        };
         if (tag !== undefined) entry.tag = tag;
         if (tagColor !== undefined) entry.tagColor = tagColor;
         const next = [...prev, entry];
@@ -95,10 +127,10 @@ export function useCalendar(selectedDate: string) {
     [selectedDate]
   );
 
-  const removeEntry = useCallback((taskId: string, date: string, hour: number) => {
+  const removeEntry = useCallback((taskId: string, date: string, startMinute: number) => {
     setEntries((prev) => {
       const next = prev.filter(
-        (e) => !(e.taskId === taskId && e.date === date && e.hour === hour)
+        (e) => !(e.taskId === taskId && e.date === date && e.startMinute === startMinute)
       );
       saveEntries(next);
       return next;
@@ -106,24 +138,33 @@ export function useCalendar(selectedDate: string) {
   }, []);
 
   const moveEntry = useCallback(
-    (taskId: string, fromDate: string, fromHour: number, toHour: number) => {
+    (taskId: string, fromDate: string, fromStartMinute: number, toStartMinute: number) => {
       setEntries((prev) => {
         const entry = prev.find(
-          (e) => e.taskId === taskId && e.date === fromDate && e.hour === fromHour
+          (e) =>
+            e.taskId === taskId &&
+            e.date === fromDate &&
+            e.startMinute === fromStartMinute
         );
         if (!entry) return prev;
-        const dur = entry.duration ?? 1;
-        if (toHour < 0 || toHour + dur > 24) return prev;
+        const dur = entry.duration ?? 60;
+        if (toStartMinute < 0 || toStartMinute + dur > 24 * 60) return prev;
         const others = prev.filter(
-          (e) => !(e.taskId === taskId && e.date === fromDate && e.hour === fromHour)
+          (e) =>
+            !(e.taskId === taskId && e.date === fromDate && e.startMinute === fromStartMinute)
         );
-        for (let h = toHour; h < toHour + dur; h++) {
-          if (others.some((e) => e.date === selectedDate && coversHour(e, h)))
-            return prev;
-        }
+        const overlaps = others.some(
+          (e) =>
+            e.date === selectedDate &&
+            e.startMinute < toStartMinute + dur &&
+            e.startMinute + e.duration > toStartMinute
+        );
+        if (overlaps) return prev;
         const next = prev.map((e) =>
-          e.taskId === taskId && e.date === fromDate && e.hour === fromHour
-            ? { ...e, hour: toHour }
+          e.taskId === taskId &&
+          e.date === fromDate &&
+          e.startMinute === fromStartMinute
+            ? { ...e, startMinute: toStartMinute }
             : e
         );
         saveEntries(next);
@@ -134,25 +175,29 @@ export function useCalendar(selectedDate: string) {
   );
 
   const resizeEntry = useCallback(
-    (taskId: string, date: string, hour: number, newDuration: number) => {
+    (taskId: string, date: string, startMinute: number, newDuration: number) => {
       setEntries((prev) => {
-        if (newDuration < 1 || hour + newDuration > 24) return prev;
+        if (newDuration < 10 || startMinute + newDuration > 24 * 60) return prev;
         const entry = prev.find(
-          (e) => e.taskId === taskId && e.date === date && e.hour === hour
+          (e) => e.taskId === taskId && e.date === date && e.startMinute === startMinute
         );
         if (!entry) return prev;
-        const oldDur = entry.duration ?? 1;
+        const oldDur = entry.duration ?? 60;
         if (newDuration > oldDur) {
           const others = prev.filter(
-            (e) => !(e.taskId === taskId && e.date === date && e.hour === hour)
+            (e) =>
+              !(e.taskId === taskId && e.date === date && e.startMinute === startMinute)
           );
-          for (let h = hour + oldDur; h < hour + newDuration; h++) {
-            if (others.some((o) => o.date === date && coversHour(o, h)))
-              return prev;
-          }
+          const overlaps = others.some(
+            (o) =>
+              o.date === date &&
+              o.startMinute < startMinute + newDuration &&
+              o.startMinute + o.duration > startMinute + oldDur
+          );
+          if (overlaps) return prev;
         }
         const next = prev.map((e) =>
-          e.taskId === taskId && e.date === date && e.hour === hour
+          e.taskId === taskId && e.date === date && e.startMinute === startMinute
             ? { ...e, duration: newDuration }
             : e
         );
@@ -164,10 +209,10 @@ export function useCalendar(selectedDate: string) {
   );
 
   const toggleEntry = useCallback(
-    (taskId: string, date: string, hour: number) => {
+    (taskId: string, date: string, startMinute: number) => {
       setEntries((prev) => {
         const next = prev.map((e) =>
-          e.taskId === taskId && e.date === date && e.hour === hour
+          e.taskId === taskId && e.date === date && e.startMinute === startMinute
             ? { ...e, done: !e.done }
             : e
         );
@@ -184,12 +229,14 @@ export function useCalendar(selectedDate: string) {
   );
 
   const isSlotOccupied = useCallback(
-    (hour: number) => dateEntries.some((e) => coversHour(e, hour)),
+    (startMinute: number) =>
+      dateEntries.some((e) => coversMinute(e, startMinute)),
     [dateEntries]
   );
 
   const getEntryAt = useCallback(
-    (hour: number) => dateEntries.find((e) => coversHour(e, hour)) ?? null,
+    (startMinute: number) =>
+      dateEntries.find((e) => coversMinute(e, startMinute)) ?? null,
     [dateEntries]
   );
 
@@ -199,7 +246,6 @@ export function useCalendar(selectedDate: string) {
     [dateEntries]
   );
 
-  /** Query: возвращает записи для заданной даты (не мутирует состояние) */
   const getEntriesForDate = useCallback(
     (date: string): CalendarEntry[] => entries.filter((e) => e.date === date),
     [entries]

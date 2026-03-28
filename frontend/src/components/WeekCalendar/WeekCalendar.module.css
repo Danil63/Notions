@@ -187,61 +187,10 @@
   background: rgba(0, 0, 0, 0.25);
 }
 
-/* ===== Hour row ===== */
-
-.hourRow {
-  display: grid;
-  grid-template-columns: 52px repeat(7, 1fr);
-  height: 44px;
-  position: relative;
-}
-
-/* ===== Time label ===== */
-
-.timeLabel {
-  grid-column: 1;
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--color-text-muted);
-  text-align: right;
-  padding: 0 10px 0 8px;
-  display: flex;
-  align-items: flex-start;
-  padding-top: 4px;
-  user-select: none;
-  font-variant-numeric: tabular-nums;
-  font-family: -apple-system, "SF Pro Text", sans-serif;
-  line-height: 1;
-}
-
-.timeLabelCurrent {
-  color: #ff3b30;
-  font-weight: 600;
-}
-
-/* ===== Cell ===== */
-
-.cell {
-  grid-column: auto;
-  border-left: 1px solid rgba(0, 0, 0, 0.04);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.04);
-  position: relative;
-  min-width: 0;
-}
-
-.cellToday {
-  background: rgba(255, 59, 48, 0.02);
-}
-
-.cellCurrent {
-  background: rgba(255, 59, 48, 0.04);
-}
-
-/* ===== Current time indicator ===== */
-
-.currentTimeLine {
+/* Линия текущего времени (глобальная, поверх всех колонок) */
+.currentTimeLineGlobal {
   position: absolute;
-  left: 0;
+  left: 52px;
   right: 0;
   height: 1.5px;
   background: #ff3b30;
@@ -263,15 +212,91 @@
   flex-shrink: 0;
 }
 
+/* ===== Hour row ===== */
+
+.hourRow {
+  display: grid;
+  grid-template-columns: 52px repeat(7, 1fr);
+  height: 66px;
+  position: relative;
+}
+
+/* ===== Time label с засечками ===== */
+
+.timeLabel {
+  position: relative;
+  grid-column: 1;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  text-align: right;
+  padding: 0 10px 0 8px;
+  display: flex;
+  align-items: flex-start;
+  padding-top: 4px;
+  user-select: none;
+  font-variant-numeric: tabular-nums;
+  font-family: -apple-system, "SF Pro Text", sans-serif;
+  line-height: 1;
+}
+
+.timeLabelCurrent {
+  color: #ff3b30;
+  font-weight: 600;
+}
+
+.tickMarks {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 100%;
+  pointer-events: none;
+}
+
+.tick {
+  position: absolute;
+  right: 4px;
+  width: 6px;
+  height: 1px;
+  background: rgba(0, 0, 0, 0.12);
+  transform: translateY(-50%);
+}
+
+.tickHalf {
+  position: absolute;
+  right: 4px;
+  width: 10px;
+  height: 1px;
+  background: rgba(0, 0, 0, 0.2);
+  transform: translateY(-50%);
+}
+
+/* ===== Cell ===== */
+
+.cell {
+  grid-column: auto;
+  border-left: 1px solid rgba(0, 0, 0, 0.04);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+  position: relative;
+  min-width: 0;
+  overflow: visible;
+}
+
+.cellToday {
+  background: rgba(255, 59, 48, 0.02);
+}
+
+.cellCurrent {
+  background: rgba(255, 59, 48, 0.04);
+}
+
 /* ===== Entry ===== */
 
 .entry {
   position: absolute;
-  top: 2px;
   left: 2px;
   right: 2px;
-  /* height: 44px * dur - 4px (отступы) */
-  height: calc(calc(var(--dur, 1) * 44px) - 4px);
   background: linear-gradient(135deg, rgba(0, 122, 255, 0.12), rgba(0, 122, 255, 0.07));
   border: 1px solid rgba(0, 122, 255, 0.2);
   border-radius: 6px;
@@ -281,6 +306,7 @@
   cursor: grab;
   display: flex;
   align-items: flex-start;
+  box-sizing: border-box;
 }
 
 .entry:active {
@@ -333,7 +359,7 @@
 
   .hourRow {
     grid-template-columns: 40px repeat(7, 1fr);
-    height: 40px;
+    height: 66px;
   }
 
   .timeLabel {
@@ -375,6 +401,5 @@
   .entry {
     padding: 1px 2px;
     border-radius: 3px;
-    height: calc(calc(var(--dur, 1) * 40px) - 4px);
   }
 }

@@ -83,17 +83,17 @@ export default function App() {
     (
       taskId: string,
       taskText: string,
-      hour: number,
+      startMinute: number,
       fromCalendar?: boolean,
       fromDate?: string,
-      fromHour?: number,
+      fromStartMinute?: number,
       tag?: string,
       tagColor?: string
     ) => {
-      if (fromCalendar && fromDate !== undefined && fromHour !== undefined) {
-        moveEntry(taskId, fromDate, fromHour, hour);
+      if (fromCalendar && fromDate !== undefined && fromStartMinute !== undefined) {
+        moveEntry(taskId, fromDate, fromStartMinute, startMinute);
       } else {
-        addEntry(taskId, taskText, hour, tag, tagColor);
+        addEntry(taskId, taskText, startMinute, 60, tag, tagColor);
         deleteTask(taskId);
       }
     },
@@ -101,8 +101,8 @@ export default function App() {
   );
 
   const handleReturnToList = useCallback(
-    (taskId: string, taskText: string, date: string, hour: number) => {
-      removeEntry(taskId, date, hour);
+    (taskId: string, taskText: string, date: string, startMinute: number) => {
+      removeEntry(taskId, date, startMinute);
       addTask(taskText);
     },
     [removeEntry, addTask]
@@ -122,9 +122,9 @@ export default function App() {
   );
 
   const handleTapEmptySlot = useCallback(
-    (hour: number) => {
+    (startMinute: number) => {
       if (!selectedTask) return;
-      addEntry(selectedTask.id, selectedTask.text, hour, selectedTask.tag, selectedTask.tagColor);
+      addEntry(selectedTask.id, selectedTask.text, startMinute, 60, selectedTask.tag, selectedTask.tagColor);
       deleteTask(selectedTask.id);
       setSelectedTask(null);
     },
@@ -132,9 +132,9 @@ export default function App() {
   );
 
   const handleTapOccupiedSlot = useCallback(
-    (taskId: string, taskText: string, date: string, hour: number) => {
+    (taskId: string, taskText: string, date: string, startMinute: number) => {
       if (!canAdd) return;
-      removeEntry(taskId, date, hour);
+      removeEntry(taskId, date, startMinute);
       addTask(taskText);
     },
     [canAdd, removeEntry, addTask]
@@ -155,10 +155,10 @@ export default function App() {
       taskId: string,
       taskText: string,
       fromDate: string,
-      fromHour: number,
+      fromStartMinute: number,
       targetDateKey: string
     ) => {
-      removeEntry(taskId, fromDate, fromHour);
+      removeEntry(taskId, fromDate, fromStartMinute);
       pendingTaskRef.current = { text: taskText, targetDate: targetDateKey };
       goToDate(targetDateKey);
       setViewMode("day");
