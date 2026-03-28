@@ -256,11 +256,10 @@ export function TaskItem({
                 className={styles.subtaskInput}
                 value={newSubtask}
                 onChange={e => setNewSubtask(e.target.value)}
-                placeholder="Подзадача..."
+                placeholder="Подзадача... (Enter)"
                 maxLength={40}
                 onKeyDown={e => { if (e.key === 'Escape') setExpanded(false); }}
               />
-              <button type="submit" className={styles.subtaskAddBtn} disabled={!newSubtask.trim()}>+</button>
             </form>
           )}
         </div>

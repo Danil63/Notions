@@ -41,16 +41,23 @@ export function usePointerResize(
   useEffect(() => { onResizeRef.current = onResize; }, [onResize]);
   useEffect(() => { isSlotFreeRef.current = isSlotFree; }, [isSlotFree]);
 
-  const calcDuration = useCallback((clientY: number): number => {
+  // Плавная (без снапа) — для визуального размера во время тянуть
+  const calcRawDuration = useCallback((clientY: number): number => {
     const state = stateRef.current;
     if (!state) return 60;
-
     const deltaPx = clientY - state.startY;
-    // Снаппим к 10 минутам
+    const raw = state.startDuration + deltaPx / PX_PER_MINUTE;
+    return Math.max(10, Math.min(24 * 60 - state.startMinute, raw));
+  }, []);
+
+  // Снаппинг к 10 минутам — только для фиксации при отпускании
+  const calcSnappedDuration = useCallback((clientY: number): number => {
+    const state = stateRef.current;
+    if (!state) return 60;
+    const deltaPx = clientY - state.startY;
     const deltaMinutes = Math.round(deltaPx / PX_PER_MINUTE / 10) * 10;
     const raw = state.startDuration + deltaMinutes;
-    const clamped = Math.max(10, Math.min(24 * 60 - state.startMinute, raw));
-    return clamped;
+    return Math.max(10, Math.min(24 * 60 - state.startMinute, raw));
   }, []);
 
   const handleResizePointerDown = useCallback((
@@ -60,6 +67,8 @@ export function usePointerResize(
   ) => {
     e.stopPropagation();
     e.preventDefault();
+    // Блокируем нативное всплытие — иначе на мобильных одновременно активируется usePointerMove
+    e.nativeEvent.stopImmediatePropagation();
 
     stateRef.current = {
       taskId: entry.taskId,
@@ -78,13 +87,15 @@ export function usePointerResize(
     const onMove = (ev: PointerEvent) => {
       autoScroll(ev.clientY, scrollContainerRef.current);
       if (previewElRef.current && stateRef.current) {
-        const dur = calcDuration(ev.clientY);
-        const heightPx = dur * PX_PER_MINUTE - 4;
+        // Плавная высота без снапа для мягкого ощущения
+        const rawDur = calcRawDuration(ev.clientY);
+        const heightPx = rawDur * PX_PER_MINUTE - 4;
         previewElRef.current.style.height = `${Math.max(heightPx, 20)}px`;
-        // Обновляем метку конца времени
+        // Метка конца — показываем снаппинутое значение (куда приземлится)
+        const snappedDur = calcSnappedDuration(ev.clientY);
         const endEl = previewElRef.current.querySelector("[data-time-end]") as HTMLElement | null;
         if (endEl) {
-          endEl.textContent = fmtMin(stateRef.current.startMinute + dur);
+          endEl.textContent = fmtMin(stateRef.current.startMinute + snappedDur);
           endEl.style.display = "";
         }
       }
@@ -93,7 +104,8 @@ export function usePointerResize(
     const onUp = (ev: PointerEvent) => {
       const state = stateRef.current;
       if (state) {
-        const newDuration = calcDuration(ev.clientY);
+        // Фиксируем снаппинутое значение
+        const newDuration = calcSnappedDuration(ev.clientY);
         if (newDuration !== state.startDuration) {
           onResizeRef.current(state.taskId, state.date, state.startMinute, newDuration);
         } else if (previewElRef.current) {
@@ -112,7 +124,7 @@ export function usePointerResize(
 
     document.addEventListener("pointermove", onMove);
     document.addEventListener("pointerup", onUp);
-  }, [calcDuration]);
+  }, [calcRawDuration, calcSnappedDuration]);
 
   return { handleResizePointerDown };
 }

@@ -358,20 +358,24 @@ export function DayCalendar({
                             </div>
                           ))}
                           {(!entry.subtasks || entry.subtasks.length < 3) && (
-                            <form className={styles.entrySubtaskForm} onSubmit={(e: FormEvent) => {
-                              e.preventDefault();
-                              const val = entrySubtaskInput.trim();
-                              if (val) { onAddCalendarSubtask?.(entry.taskId, entry.date, entry.startMinute, val); setEntrySubtaskInput(''); }
-                            }}>
+                            <form
+                              className={styles.entrySubtaskForm}
+                              onSubmit={(e: FormEvent) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                const val = entrySubtaskInput.trim();
+                                if (val) { onAddCalendarSubtask?.(entry.taskId, entry.date, entry.startMinute, val); setEntrySubtaskInput(''); }
+                              }}
+                            >
                               <input
                                 className={styles.entrySubtaskInput}
                                 value={entrySubtaskInput}
                                 onChange={e => setEntrySubtaskInput(e.target.value)}
-                                placeholder="Подзадача..."
+                                placeholder="Подзадача... (Enter)"
                                 maxLength={40}
                                 onClick={e => e.stopPropagation()}
+                                onKeyDown={e => e.stopPropagation()}
                               />
-                              <button type="submit" className={styles.entrySubtaskAddBtn} disabled={!entrySubtaskInput.trim()}>+</button>
                             </form>
                           )}
                         </div>
