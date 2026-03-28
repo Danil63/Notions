@@ -8,9 +8,15 @@ const SCROLL_SPEED = 6;
 interface ResizeState {
   taskId: string;
   date: string;
-  startMinute: number;
+  startMinute: number;  // в минутах
   startY: number;
   startDuration: number; // в минутах
+}
+
+function fmtMin(m: number): string {
+  const h = Math.floor(m / 60);
+  const min = m % 60;
+  return `${h}:${String(min).padStart(2, "0")}`;
 }
 
 function autoScroll(clientY: number, container: HTMLElement | null): void {
@@ -49,23 +55,18 @@ export function usePointerResize(
 
   const handleResizePointerDown = useCallback((
     e: React.PointerEvent,
-    entry: { taskId: string; date: string; hour: number; duration: number },
+    entry: { taskId: string; date: string; startMinute: number; duration: number },
     entryEl: HTMLElement | null,
   ) => {
     e.stopPropagation();
     e.preventDefault();
 
-    // hour и duration приходят в "часовых" единицах из DayCalendar (для совместимости)
-    // но мы конвертируем в минуты
-    const startMinute = entry.hour * 60;
-    const startDuration = entry.duration * 60;
-
     stateRef.current = {
       taskId: entry.taskId,
       date: entry.date,
-      startMinute,
+      startMinute: entry.startMinute,
       startY: e.clientY,
-      startDuration,
+      startDuration: entry.duration,
     };
     previewElRef.current = entryEl;
     scrollContainerRef.current = entryEl?.closest(`.${CSS.escape("calendar")}`) as HTMLElement | null
@@ -76,10 +77,16 @@ export function usePointerResize(
 
     const onMove = (ev: PointerEvent) => {
       autoScroll(ev.clientY, scrollContainerRef.current);
-      if (previewElRef.current) {
+      if (previewElRef.current && stateRef.current) {
         const dur = calcDuration(ev.clientY);
         const heightPx = dur * PX_PER_MINUTE - 4;
         previewElRef.current.style.height = `${Math.max(heightPx, 20)}px`;
+        // Обновляем метку конца времени
+        const endEl = previewElRef.current.querySelector("[data-time-end]") as HTMLElement | null;
+        if (endEl) {
+          endEl.textContent = fmtMin(stateRef.current.startMinute + dur);
+          endEl.style.display = "";
+        }
       }
     };
 

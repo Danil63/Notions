@@ -57,7 +57,7 @@ export function usePointerMove(
 
   const handleMovePointerDown = useCallback((
     e: React.PointerEvent,
-    entry: { taskId: string; date: string; hour: number; duration: number },
+    entry: { taskId: string; date: string; startMinute: number; duration: number },
     entryEl: HTMLElement | null,
   ) => {
     // Don't start move from interactive children
@@ -66,15 +66,11 @@ export function usePointerMove(
       return;
     }
 
-    // hour и duration приходят в "часовых" единицах из DayCalendar
-    const startMinute = entry.hour * 60;
-    const durationMinutes = entry.duration * 60;
-
     stateRef.current = {
       taskId: entry.taskId,
       date: entry.date,
-      startMinute,
-      duration: durationMinutes,
+      startMinute: entry.startMinute,
+      duration: entry.duration,
       startY: e.clientY,
       moved: false,
     };
@@ -101,10 +97,15 @@ export function usePointerMove(
 
       autoScroll(ev.clientY, scrollContainerRef.current);
       const targetMinute = calcTargetMinute(ev.clientY);
-      if (canPlace(targetMinute) && previewElRef.current) {
+      if (canPlace(targetMinute) && previewElRef.current && state) {
         const minuteInHour = targetMinute % 60;
-        const topPx = minuteInHour * PX_PER_MINUTE;
-        previewElRef.current.style.top = `${topPx}px`;
+        previewElRef.current.style.top = `${minuteInHour * PX_PER_MINUTE}px`;
+        // Обновляем метки времени начала и конца
+        const fmtMin = (m: number) => `${Math.floor(m / 60)}:${String(m % 60).padStart(2, "0")}`;
+        const startEl = previewElRef.current.querySelector("[data-time-start]") as HTMLElement | null;
+        if (startEl) startEl.textContent = fmtMin(targetMinute);
+        const endEl = previewElRef.current.querySelector("[data-time-end]") as HTMLElement | null;
+        if (endEl) endEl.textContent = fmtMin(targetMinute + state.duration);
       }
     };
 

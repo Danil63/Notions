@@ -253,21 +253,19 @@ export function DayCalendar({
                           {
                             taskId: entry.taskId,
                             date: entry.date,
-                            hour: Math.floor(entry.startMinute / 60),
-                            duration: Math.ceil(entry.duration / 60),
+                            startMinute: entry.startMinute,
+                            duration: entry.duration,
                           },
                           entryRefs.current.get(key) ?? null
                         )
                       }
                     >
-                      <span className={styles.entryTimeStart}>
+                      <span className={styles.entryTimeStart} data-time-start>
                         {formatMinute(entry.startMinute)}
                       </span>
-                      {dur > 60 && (
-                        <span className={styles.entryTimeEnd}>
-                          {formatMinute(entry.startMinute + dur)}
-                        </span>
-                      )}
+                      <span className={styles.entryTimeEnd} data-time-end>
+                        {formatMinute(entry.startMinute + dur)}
+                      </span>
                       <div className={styles.entryContent}>
                         <div
                           className={`${styles.entryCheckbox} ${entry.done ? styles.entryChecked : ""}`}
@@ -349,8 +347,8 @@ export function DayCalendar({
                             {
                               taskId: entry.taskId,
                               date: entry.date,
-                              hour: Math.floor(entry.startMinute / 60),
-                              duration: Math.ceil(entry.duration / 60),
+                              startMinute: entry.startMinute,
+                              duration: entry.duration,
                             },
                             entryRefs.current.get(key) ?? null
                           )
