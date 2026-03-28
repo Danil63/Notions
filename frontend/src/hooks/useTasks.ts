@@ -128,6 +128,14 @@ export function useTasks(selectedDate: string) {
     });
   }, []);
 
+  const renameTask = useCallback((id: string, newText: string): void => {
+    setAllTasks((prev) => {
+      const next = prev.map((t) => (t.id === id ? { ...t, text: newText } : t));
+      saveAll(next);
+      return next;
+    });
+  }, []);
+
   const addSubtask = useCallback((taskId: string, text: string): void => {
     setAllTasks((prev) => {
       const next = prev.map((t) => {
@@ -176,5 +184,5 @@ export function useTasks(selectedDate: string) {
   const canAdd = tasks.length < MAX_TASKS;
   const doneCount = useMemo(() => tasks.filter((t) => t.done).length, [tasks]);
 
-  return { tasks, allTasks, addTask, toggleTask, deleteTask, updateTaskTag, removeTaskTag, addSubtask, toggleSubtask, deleteSubtask, canAdd, doneCount };
+  return { tasks, allTasks, addTask, toggleTask, deleteTask, renameTask, updateTaskTag, removeTaskTag, addSubtask, toggleSubtask, deleteSubtask, canAdd, doneCount };
 }

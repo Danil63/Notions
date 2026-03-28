@@ -13,6 +13,7 @@ interface Props {
   subtasks?: Subtask[];
   onToggle: () => void;
   onDelete: () => void;
+  onRename: (newText: string) => void;
   onUpdateTag: (tag: string, tagColor: string) => void;
   onRemoveTag: () => void;
   onAddSubtask: (text: string) => void;
@@ -32,6 +33,7 @@ export function TaskItem({
   subtasks,
   onToggle,
   onDelete,
+  onRename,
   onUpdateTag,
   onRemoveTag,
   onAddSubtask,
@@ -43,6 +45,9 @@ export function TaskItem({
   const [showPicker, setShowPicker] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [newSubtask, setNewSubtask] = useState('');
+  const [editing, setEditing] = useState(false);
+  const [editValue, setEditValue] = useState('');
+  const editInputRef = useRef<HTMLInputElement>(null);
   const pickerRef = useRef<HTMLDivElement>(null);
 
   const progress = subtasks && subtasks.length > 0
@@ -59,6 +64,30 @@ export function TaskItem({
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [showPicker]);
+
+  useEffect(() => {
+    if (editing && editInputRef.current) {
+      editInputRef.current.focus();
+      editInputRef.current.select();
+    }
+  }, [editing]);
+
+  function handleStartEdit(e: React.MouseEvent): void {
+    e.stopPropagation();
+    setEditValue(text);
+    setEditing(true);
+  }
+
+  function handleEditCommit(): void {
+    const trimmed = editValue.trim();
+    if (trimmed && trimmed !== text) onRename(trimmed);
+    setEditing(false);
+  }
+
+  function handleEditKeyDown(e: React.KeyboardEvent<HTMLInputElement>): void {
+    if (e.key === 'Enter') { e.preventDefault(); handleEditCommit(); }
+    if (e.key === 'Escape') { setEditing(false); }
+  }
 
   function handleDragStart(e: DragEvent): void {
     e.dataTransfer.setData("taskId", id);
@@ -99,8 +128,8 @@ export function TaskItem({
       <div
         className={`${styles.item} ${done ? styles.done : ""} ${isSelected ? styles.selected : ""}`}
         style={cardStyle}
-        draggable
-        onDragStart={handleDragStart}
+        draggable={!editing}
+        onDragStart={editing ? undefined : handleDragStart}
         onClick={onSelect}
       >
         <div className={styles.itemTop}>
@@ -121,7 +150,20 @@ export function TaskItem({
               }
             }}
           />
-          <div className={styles.text}>{text}</div>
+          {editing ? (
+            <input
+              ref={editInputRef}
+              className={styles.editInput}
+              value={editValue}
+              maxLength={80}
+              onChange={e => setEditValue(e.target.value)}
+              onBlur={handleEditCommit}
+              onKeyDown={handleEditKeyDown}
+              onClick={e => e.stopPropagation()}
+            />
+          ) : (
+            <div className={styles.text} onDoubleClick={handleStartEdit}>{text}</div>
+          )}
           <button
             className={`${styles.expandBtn} ${expanded ? styles.expandBtnOpen : ''}`}
             onClick={(e) => { e.stopPropagation(); setExpanded(v => !v); }}

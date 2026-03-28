@@ -38,7 +38,7 @@ export default function App() {
     goToToday,
   } = useSelectedDate();
 
-  const { tasks, allTasks, addTask, toggleTask, deleteTask, updateTaskTag, removeTaskTag, addSubtask, toggleSubtask, deleteSubtask, canAdd, doneCount } =
+  const { tasks, allTasks, addTask, toggleTask, deleteTask, renameTask, updateTaskTag, removeTaskTag, addSubtask, toggleSubtask, deleteSubtask, canAdd, doneCount } =
     useTasks(selectedDate);
 
   const { tags, addTag, deleteTag } = useTags();
@@ -211,6 +211,7 @@ export default function App() {
             onToggle={toggleTask}
             onDelete={isMobile ? handleDeleteWithClear : deleteTask}
             onAdd={addTask}
+            onRename={renameTask}
             onUpdateTag={updateTaskTag}
             onRemoveTag={removeTaskTag}
             onReturnFromCalendar={handleReturnToList}

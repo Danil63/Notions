@@ -11,6 +11,7 @@ interface Props {
   onToggle: (id: string) => void;
   onDelete: (id: string) => void;
   onAdd: (text: string) => void;
+  onRename: (id: string, text: string) => void;
   onUpdateTag: (id: string, tag: string, tagColor: string) => void;
   onRemoveTag: (id: string) => void;
   onReturnFromCalendar?: (taskId: string, taskText: string, date: string, startMinute: number) => void;
@@ -28,6 +29,7 @@ export function TaskList({
   onToggle,
   onDelete,
   onAdd,
+  onRename,
   onUpdateTag,
   onRemoveTag,
   onReturnFromCalendar,
@@ -85,6 +87,7 @@ export function TaskList({
           subtasks={task.subtasks}
           onToggle={() => onToggle(task.id)}
           onDelete={() => onDelete(task.id)}
+          onRename={(newText) => onRename(task.id, newText)}
           onUpdateTag={(tag, tagColor) => onUpdateTag(task.id, tag, tagColor)}
           onRemoveTag={() => onRemoveTag(task.id)}
           onAddSubtask={(text) => onAddSubtask(task.id, text)}
