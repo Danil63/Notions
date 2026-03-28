@@ -5,12 +5,16 @@ import { TaskList } from "./components/TaskList";
 import { DayCalendar } from "./components/DayCalendar";
 import { WeekDayStrip } from "./components/WeekDayStrip";
 import { WeekCalendar } from "./components/WeekCalendar";
+import { SkillBlocks } from "./components/SkillBlocks";
+import { TagManager } from "./components/TagManager";
 import { useTasks } from "./hooks/useTasks";
+import { useTags } from "./hooks/useTags";
 import { useTimer } from "./hooks/useTimer";
 import { useCalendar } from "./hooks/useCalendar";
 import { useSelectedDate } from "./hooks/useSelectedDate";
 import { useSwipe } from "./hooks/useSwipe";
 import { useWeekDayProgress } from "./hooks/useWeekDayProgress";
+import { useSkillBlocks } from "./hooks/useSkillBlocks";
 import { getTopicsCardColor, getHoursCardColor } from "./utils/colors";
 import styles from "./App.module.css";
 
@@ -33,8 +37,10 @@ export default function App() {
     goToToday,
   } = useSelectedDate();
 
-  const { tasks, allTasks, addTask, toggleTask, deleteTask, canAdd, doneCount } =
+  const { tasks, allTasks, addTask, toggleTask, deleteTask, updateTaskTag, removeTaskTag, canAdd, doneCount } =
     useTasks(selectedDate);
+
+  const { tags, addTag, deleteTag } = useTags();
 
   const timeLeft = useTimer();
 
@@ -53,8 +59,9 @@ export default function App() {
   } = useCalendar(selectedDate);
 
   const weekProgress = useWeekDayProgress(selectedDate, entries, allTasks);
+  const skills = useSkillBlocks(allTasks, entries);
 
-  const [selectedTask, setSelectedTask] = useState<{ id: string; text: string } | null>(null);
+  const [selectedTask, setSelectedTask] = useState<{ id: string; text: string; tag?: string; tagColor?: string } | null>(null);
   const [isMobile, setIsMobile] = useState(() => window.matchMedia(MOBILE_MQ).matches);
 
   useEffect(() => {
@@ -79,12 +86,14 @@ export default function App() {
       hour: number,
       fromCalendar?: boolean,
       fromDate?: string,
-      fromHour?: number
+      fromHour?: number,
+      tag?: string,
+      tagColor?: string
     ) => {
       if (fromCalendar && fromDate !== undefined && fromHour !== undefined) {
         moveEntry(taskId, fromDate, fromHour, hour);
       } else {
-        addEntry(taskId, taskText, hour);
+        addEntry(taskId, taskText, hour, tag, tagColor);
         deleteTask(taskId);
       }
     },
@@ -100,8 +109,9 @@ export default function App() {
   );
 
   const handleSelectTask = useCallback((id: string, text: string) => {
-    setSelectedTask((prev) => (prev?.id === id ? null : { id, text }));
-  }, []);
+    const found = tasks.find((t) => t.id === id);
+    setSelectedTask((prev) => (prev?.id === id ? null : { id, text, tag: found?.tag, tagColor: found?.tagColor }));
+  }, [tasks]);
 
   const handleDeleteWithClear = useCallback(
     (id: string) => {
@@ -114,7 +124,7 @@ export default function App() {
   const handleTapEmptySlot = useCallback(
     (hour: number) => {
       if (!selectedTask) return;
-      addEntry(selectedTask.id, selectedTask.text, hour);
+      addEntry(selectedTask.id, selectedTask.text, hour, selectedTask.tag, selectedTask.tagColor);
       deleteTask(selectedTask.id);
       setSelectedTask(null);
     },
@@ -191,10 +201,13 @@ export default function App() {
         <div className={styles.leftColumn}>
           <TaskList
             tasks={tasks}
+            tags={tags}
             canAdd={canAdd}
             onToggle={toggleTask}
             onDelete={isMobile ? handleDeleteWithClear : deleteTask}
             onAdd={addTask}
+            onUpdateTag={updateTaskTag}
+            onRemoveTag={removeTaskTag}
             onReturnFromCalendar={handleReturnToList}
             selectedTaskId={isMobile ? (selectedTask?.id ?? null) : undefined}
             onSelectTask={isMobile ? handleSelectTask : undefined}
@@ -265,12 +278,21 @@ export default function App() {
         onSelectDate={goToDate}
         minDate={today}
         maxDate={maxDate}
+        onPrevWeek={goToPrevWeek}
+        onNextWeek={goToNextWeek}
       />
 
       <div className={styles.swipeContainer} {...activeSwipeHandlers}>
         {viewMode === "day" && dayContent}
         {viewMode === "week" && weekContent}
       </div>
+
+      {viewMode === "day" && (
+        <>
+          <SkillBlocks skills={skills} />
+          <TagManager tags={tags} onAddTag={addTag} onDeleteTag={deleteTag} />
+        </>
+      )}
 
       <button
         className={styles.fab}

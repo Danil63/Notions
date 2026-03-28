@@ -58,16 +58,16 @@
   transition: background 0.15s ease, color 0.15s ease;
 }
 
-/* Сегодня — всегда красный кружок */
+/* Сегодня — красный кружок */
 .today {
   background: #ff3b30;
   color: #ffffff;
 }
 
-/* Выбранный день (не сегодня) — серый фон */
+/* Выбранный день — синий кружок */
 .selected {
-  background: var(--color-bg-track);
-  color: var(--color-text);
+  background: rgba(0, 127, 255, 0.15);
+  color: var(--color-primary);
 }
 
 .fullDate {
@@ -78,4 +78,36 @@
   padding: 8px 0 0;
   margin-bottom: 20px;
   letter-spacing: -0.01em;
+}
+
+/* ── Nav arrows (desktop only) ── */
+.navBtn {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  border: none;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s ease, color 0.15s ease;
+  padding: 0;
+  font-family: -apple-system, "SF Pro Text", sans-serif;
+  align-self: center;
+}
+
+.navBtn:hover {
+  background: rgba(0, 0, 0, 0.06);
+  color: var(--color-text);
+}
+
+@media (max-width: 768px) {
+  .navBtn {
+    display: none;
+  }
 }

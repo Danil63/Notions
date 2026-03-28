@@ -13,6 +13,8 @@ interface Props {
   onSelectDate: (date: string) => void;
   minDate: string;
   maxDate: string;
+  onPrevWeek?: () => void;
+  onNextWeek?: () => void;
 }
 
 export function WeekDayStrip({
@@ -21,6 +23,8 @@ export function WeekDayStrip({
   onSelectDate,
   minDate,
   maxDate,
+  onPrevWeek,
+  onNextWeek,
 }: Props) {
   const weekDays = useMemo(() => getWeekDays(selectedDate), [selectedDate]);
   const fullDateLabel = useMemo(() => formatFullDate(selectedDate), [selectedDate]);
@@ -28,6 +32,15 @@ export function WeekDayStrip({
   return (
     <div className={styles.wrapper}>
       <div className={styles.strip}>
+        {onPrevWeek && (
+          <button
+            className={styles.navBtn}
+            onClick={onPrevWeek}
+            aria-label="Предыдущая неделя"
+          >
+            ‹
+          </button>
+        )}
         {weekDays.map((dateKey) => {
           const isToday = dateKey === today;
           const isSelected = dateKey === selectedDate;
@@ -57,6 +70,15 @@ export function WeekDayStrip({
             </button>
           );
         })}
+        {onNextWeek && (
+          <button
+            className={styles.navBtn}
+            onClick={onNextWeek}
+            aria-label="Следующая неделя"
+          >
+            ›
+          </button>
+        )}
       </div>
       <div className={styles.fullDate}>{fullDateLabel}</div>
     </div>
