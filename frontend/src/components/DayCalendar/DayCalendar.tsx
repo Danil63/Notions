@@ -23,7 +23,6 @@ interface Props {
     tag?: string,
     tagColor?: string
   ) => void;
-  onRemove: (taskId: string, date: string, startMinute: number) => void;
   onToggle: (taskId: string, date: string, startMinute: number) => void;
   onResize: (taskId: string, date: string, startMinute: number, newDuration: number) => void;
   onMove: (taskId: string, fromDate: string, fromStartMinute: number, toStartMinute: number) => void;
@@ -51,7 +50,6 @@ export function DayCalendar({
   selectedDate,
   entries,
   onDrop,
-  onRemove,
   onToggle,
   onResize,
   onMove,

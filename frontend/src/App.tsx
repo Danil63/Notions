@@ -228,7 +228,6 @@ export default function App() {
             entries={dateEntries}
             isSlotOccupied={isSlotOccupied}
             onDrop={handleCalendarDrop}
-            onRemove={removeEntry}
             onToggle={toggleEntry}
             onResize={resizeEntry}
             onMove={moveEntry}
